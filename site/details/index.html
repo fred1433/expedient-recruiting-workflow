@@ -73,6 +73,7 @@ body[data-mode=details] .views{display:none}
 mark{background:linear-gradient(transparent 12%,var(--amber-soft) 12%,var(--amber-soft) 92%,transparent 92%);color:inherit;padding:0 1px;border-radius:2px;transition:background .15s}
 mark.on{background:linear-gradient(transparent 6%,var(--amber) 6%,var(--amber) 96%,transparent 96%);box-shadow:0 2px 0 #C9A92B}
 .slipFoot{margin:16px 22px 0;font-size:13px;color:var(--ink-3)}
+.showMsg{display:none;margin:6px 22px 0;background:none;border:0;padding:0;color:var(--teal);font-size:14px;font-weight:600;cursor:pointer}
 
 .reply{background:var(--sheet);border-radius:6px;box-shadow:0 0 0 1px var(--desk-edge);padding:16px 22px 18px;border-top:4px solid var(--teal)}
 .reply h3{font:600 15px/1.3 var(--sans);margin:0 0 2px}
@@ -182,6 +183,12 @@ h2{font:500 clamp(26px,3.2vw,36px)/1.15 var(--serif);margin:0 0 10px;letter-spac
   .picker{display:block}
   .slip dl .opt{display:none}
   .msg{font-size:19px;margin-top:4px}
+  .msg.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .showMsg{display:block}
+  .msg:not(.clamp) + .showMsg{display:none}
+  .msgLabel,.inqHead,.picker label{display:none}
+  .slip dl{margin-top:10px}
+  .top span{max-width:60%}
   .msg.short{font-size:24px}
   .slipFoot{display:none}
   .reply{padding:14px 16px 16px}
@@ -421,7 +428,7 @@ const fmtDue = (iso) => { try { return new Intl.DateTimeFormat("en-US", { timeZo
 function slip(s) {
   const f = s.form, ev = s.reading ? s.reading.evidence : {};
   return `<div>
-    <p class="colHead">${ICON_FORM}The inquiry, as it reaches HubSpot</p>
+    <p class="colHead inqHead">${ICON_FORM}The inquiry, as it reaches HubSpot</p>
     <div class="slip">
       <div class="band"></div>
       <dl>
@@ -431,8 +438,9 @@ function slip(s) {
         <dt class="opt">Phone</dt><dd class="opt">${esc(f.phone)}</dd>
       </dl>
       <p class="msgLabel">Message</p>
-      <p class="msg ${f.message.length < 30 ? "short" : ""}">${highlight(f.message, ev)}</p>
-      <p class="slipFoot">${s.model.length ? `The model received Credentials and Message, plus a known-to-team flag (${esc(s.model[0].served)}, ${(s.model[0].ms / 1000).toFixed(1)} s).` : "Nothing went to the model: the message is too short to read."}</p>
+      <p class="msg clamp ${f.message.length < 30 ? "short" : ""}">${highlight(f.message, ev)}</p>
+      <button class="showMsg" type="button">Show the full message</button>
+      <p class="slipFoot">${s.model.length ? `The model received Credentials and Message, a known-to-team flag and what earlier inquiries said (${esc(s.model[0].served)}, ${(s.model[0].ms / 1000).toFixed(1)} s).` : "Nothing went to the model: the message is too short to read."}</p>
     </div>
   </div>`;
 }
@@ -537,6 +545,7 @@ function render() {
   bindMarks();
 }
 function bindMarks() {
+  document.querySelectorAll(".showMsg").forEach((b) => b.addEventListener("click", () => b.previousElementSibling.classList.remove("clamp")));
   const set = (k, on) => {
     document.querySelectorAll("mark[data-k]").forEach((m) => m.classList.toggle("on", on && m.dataset.k.split(" ").includes(k)));
     document.querySelectorAll(".fields .row[data-k]").forEach((r) => r.classList.toggle("on", on && r.dataset.k === k));
