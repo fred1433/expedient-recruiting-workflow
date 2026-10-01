@@ -1,0 +1,204 @@
+{
+  "id": "unclear",
+  "started": "2026-10-01T18:46:21.053Z",
+  "n8n": "2.42.2",
+  "checks": [
+    {
+      "label": "routed to clarification",
+      "ok": true,
+      "detail": "needs_clarification"
+    },
+    {
+      "label": "no certification status invented",
+      "ok": true,
+      "detail": "not_stated"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "1000",
+      "properties": {
+        "hs_object_id": "1000",
+        "email": "gliu@example.test",
+        "first_conversion_date": "2026-10-01T18:46:21.090Z",
+        "createdate": "2026-10-01T18:46:21.090Z",
+        "firstname": "Grace",
+        "lastname": "Liu",
+        "physician_credentials": "MD",
+        "phone": "(555) 010-8864",
+        "message": "A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer.",
+        "recent_conversion_date": "2026-10-01T18:46:21.090Z",
+        "recent_conversion_event_name": "Join Expedient",
+        "ai_inquiry_specialty": "pain management",
+        "ai_inquiry_license_states": "not stated",
+        "ai_inquiry_certification_statement": "not_stated",
+        "ai_inquiry_intent": "other",
+        "ai_inquiry_call_availability": "not stated",
+        "ai_inquiry_review_status": "needs_clarification",
+        "ai_inquiry_flags": "none",
+        "ai_inquiry_ref": "1000:1790880381090"
+      },
+      "createdAt": "2026-10-01T18:46:21.090Z",
+      "updatedAt": "2026-10-01T18:46:23.329Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "1001",
+      "properties": {
+        "hs_object_id": "1001",
+        "hs_createdate": "2026-10-01T18:46:23.361Z",
+        "hs_task_subject": "Physician inquiry: Grace Liu, MD (review and reply)",
+        "hs_task_body": "<p><b>Needs clarification</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer.</p><p><b>Suggested reading, from their own words</b><br>Specialty: pain management <span style=\"color:#666\">(\"I do a lot of pain management\")</span><br>Licensed in: <i>not stated</i><br>Certification: not stated<br>Looking for: other request <span style=\"color:#666\">(\"wanted to see what you offer\")</span><br>Available for a first call: <i>not stated</i> (a call window, not evaluation capacity)</p><p><b>To clarify</b><br>California medical license not stated<br>QME certification status not stated<br>They did not specify what information they want about the group</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Liu,<br><br>Thank you for reaching out and for your interest in our group. We’d be glad to share more about what we offer and discuss whether it may be a fit for your background in pain management.<br><br>If you’re open to it, please send a few times that work well for a first conversation, and we’ll propose a time.<br><br>Best regards,</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880381090</p>",
+        "hs_task_status": "NOT_STARTED",
+        "hs_task_priority": "MEDIUM",
+        "hs_task_type": "TODO",
+        "hs_timestamp": "2026-10-02T17:00:00.000Z",
+        "hubspot_owner_id": "900001"
+      },
+      "createdAt": "2026-10-01T18:46:23.361Z",
+      "updatedAt": "2026-10-01T18:46:23.361Z"
+    }
+  ],
+  "assoc": {
+    "1000": [
+      "1001"
+    ]
+  },
+  "alerts": [],
+  "modelCalls": [
+    {
+      "at": "2026-10-01T18:46:21.227Z",
+      "mode": "proxy",
+      "model": "gpt-5.4-mini-2026-03-17",
+      "fieldsSent": [
+        "credentials",
+        "message"
+      ],
+      "bytesSent": 130,
+      "status": 200,
+      "ms": 2074,
+      "content": "{\n  \"specialty\": {\n    \"value\": \"pain management\",\n    \"evidence\": \"I do a lot of pain management\"\n  },\n  \"license_states\": {\n    \"value\": null,\n    \"evidence\": null\n  },\n  \"certification_statement\": {\n    \"value\": \"not_stated\",\n    \"evidence\": null\n  },\n  \"intent\": {\n    \"value\": \"other\",\n    \"evidence\": \"wanted to see what you offer\"\n  },\n  \"call_availability\": {\n    \"value\": null,\n    \"evidence\": null\n  },\n  \"questions\": [],\n  \"ambiguities\": [\n    \"California medical license not stated\",\n    \"QME certification status not stated\",\n    \"They did not specify what information they want about the group\"\n  ],\n  \"proposed_reply\": \"Hello,\\n\\nThank you for reaching out and for your interest in our group. We’d be glad to share more about what we offer and discuss whether it may be a fit for your background in pain management.\\n\\nIf you’re open to it, please send a few times that work well for a first conversation, and we’ll propose a time.\\n\\nBest regards,\"\n}",
+      "servedModel": "gpt-5.4-mini-2026-03-17",
+      "usage": {
+        "prompt_tokens": 688,
+        "completion_tokens": 307,
+        "total_tokens": 995,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 40,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    }
+  ],
+  "http": [
+    {
+      "at": "2026-10-01T18:46:21.141Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:21.206Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:21.227Z",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:23.329Z",
+      "method": "PATCH",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:23.342Z",
+      "method": "GET",
+      "path": "/crm/v4/objects/contacts/1000/associations/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:23.361Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/tasks",
+      "status": 201
+    }
+  ],
+  "ledger": [
+    {
+      "submission_key": "1000:1790880381090",
+      "status": "done",
+      "attempts": 1,
+      "suggestions_written": true,
+      "task_id": "1001",
+      "task_action": "created",
+      "last_step": "done",
+      "last_error": null,
+      "alerted": false
+    }
+  ],
+  "events": [
+    {
+      "at": "18:46:21.158",
+      "submission_key": "1000:1790880381090",
+      "step": "poll",
+      "outcome": "recorded",
+      "detail": null
+    },
+    {
+      "at": "18:46:21.162",
+      "submission_key": "1000:1790880381090",
+      "step": "claim",
+      "outcome": "attempt 1",
+      "detail": null
+    },
+    {
+      "at": "18:46:23.315",
+      "submission_key": "1000:1790880381090",
+      "step": "interpret",
+      "outcome": "saved",
+      "detail": "model:needs_clarification"
+    },
+    {
+      "at": "18:46:23.334",
+      "submission_key": "1000:1790880381090",
+      "step": "suggestions",
+      "outcome": "written",
+      "detail": null
+    },
+    {
+      "at": "18:46:23.371",
+      "submission_key": "1000:1790880381090",
+      "step": "task",
+      "outcome": "done",
+      "detail": "created 1001"
+    }
+  ],
+  "executions": [
+    {
+      "id": 269,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "18:46:21",
+      "stopped": "18:46:23"
+    },
+    {
+      "id": 270,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "success",
+      "started": "18:46:21",
+      "stopped": "18:46:23"
+    }
+  ]
+}

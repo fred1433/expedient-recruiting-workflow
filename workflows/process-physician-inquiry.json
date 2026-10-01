@@ -1,0 +1,1086 @@
+{
+  "id": "ExpInqProcess001",
+  "name": "Physician inquiry: process one submission",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "n001-start",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mapping table: everything specific to your portal lives here.\n// Left: role in this workflow. Right: HubSpot internal property name.\nconst cfg = {\n  hubspotBase: $env.HUBSPOT_BASE_URL,\n  modelBase: $env.MODEL_BASE_URL,\n  model: $env.MODEL_NAME,                       // one provider, no fallback\n  recruitingOwnerId: $env.RECRUITING_OWNER_ID,  // who receives the review task\n  maxAttempts: Number($env.MAX_ATTEMPTS || 5),\n  retryBaseSeconds: Number($env.RETRY_BASE_SECONDS || 30),\n  props: {\n    firstName: 'firstname',\n    lastName: 'lastname',\n    credentials: 'physician_credentials',       // \"Credentials\" field of the join form\n    message: 'message',                         // free-text field of the join form\n    verifiedQmeStatus: 'expedient_qme_status_verified', // set by staff only, never written here\n    sugSpecialty: 'ai_inquiry_specialty',\n    sugLicenseStates: 'ai_inquiry_license_states',\n    sugCertification: 'ai_inquiry_certification_statement',\n    sugIntent: 'ai_inquiry_intent',\n    sugCallWindow: 'ai_inquiry_call_availability',\n    sugReviewStatus: 'ai_inquiry_review_status',\n    sugFlags: 'ai_inquiry_flags',\n    sugRef: 'ai_inquiry_ref',\n  },\n  // The ONLY contact fields sent to the model. Name, email, phone, owner, history,\n  // notes and attachments never leave HubSpot.\n  modelFields: ['credentials', 'message'],\n  taskMarker: 'expedient-inquiry-review',\n  dueHourPacific: 10,\n};\nreturn [{ json: { ...$input.first().json, cfg } }];"
+      },
+      "id": "n002-configuration",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.cfg.hubspotBase }}/crm/v3/objects/contacts/{{ $json.contact_id }}?properties={{ Object.values($json.cfg.props).concat(['hubspot_owner_id','lifecyclestage']).join(',') }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "n003-read-contact",
+      "name": "Read contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        360
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "ExpHubspotTok001",
+          "name": "HubSpot private app token"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const start = $('Configuration').first().json;\nconst cfg = start.cfg, P = cfg.props;\nconst p = $input.first().json.properties || {};\nconst contact = {\n  id: String($input.first().json.id),\n  firstName: p[P.firstName] || '',\n  lastName: p[P.lastName] || '',\n  credentials: (p[P.credentials] || '').trim(),\n  message: (p[P.message] || '').trim(),\n  verifiedQmeStatus: p[P.verifiedQmeStatus] || null,\n  ownerId: p.hubspot_owner_id || null,\n  lifecyclestage: p.lifecyclestage || null,\n};\n\n// Already interpreted on an earlier attempt: reuse it, never pay for the model twice.\nif (start.model_result) {\n  return [{ json: { contact, needsModel: false, reused: true, result: start.model_result } }];\n}\n\n// Too little text to interpret: plain code, no model call.\nif (contact.message.replace(/\\s+/g, ' ').length < 20) {\n  const result = {\n    specialty: { value: null, evidence: null },\n    license_states: { value: null, evidence: null },\n    certification_statement: { value: 'not_stated', evidence: null },\n    intent: { value: 'unclear', evidence: null },\n    call_availability: { value: null, evidence: null },\n    questions: [],\n    ambiguities: ['The message is empty or too short to interpret.'],\n    flags: ['no_model_call:message_too_short'],\n    review_status: 'needs_information',\n    proposed_reply: (contact.lastName ? 'Dear Dr. ' + contact.lastName : 'Hello') + ',\\n\\nThank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, where you are licensed, and whether you are already a QME or exploring certification?\\n\\nBest regards,',\n    source: 'rules',\n  };\n  return [{ json: { contact, needsModel: false, reused: false, result } }];\n}\n\nconst allowed = {};\nfor (const f of cfg.modelFields) allowed[f] = contact[f];\n// One provider (OpenAI Chat Completions, pinned model snapshot), no fallback.\nconst modelRequest = {\n  model: cfg.model,\n  reasoning_effort: 'low',\n  max_completion_tokens: 4000,\n  response_format: { type: 'json_object' },\n  messages: [\n    { role: 'system', content: \"You read one message that a physician sent through the \\\"join us\\\" form of a California medical-legal evaluation company. The company works with Qualified Medical Evaluators (QMEs) and also helps physicians who are new to QME work. Your output helps a recruiting coordinator prepare a personal first conversation. A person reviews everything you produce; nothing is sent automatically.\\n\\nYou receive only two fields: \\\"credentials\\\" (what the physician typed in the credentials box) and \\\"message\\\" (their free text).\\n\\nReturn one JSON object and nothing else, with exactly these keys:\\n{\\n  \\\"specialty\\\":               {\\\"value\\\": string or null, \\\"evidence\\\": exact quote or null},\\n  \\\"license_states\\\":          {\\\"value\\\": array of US state codes or null, \\\"evidence\\\": exact quote or null},\\n  \\\"certification_statement\\\": {\\\"value\\\": \\\"says_certified_qme\\\" | \\\"says_in_progress\\\" | \\\"says_not_certified\\\" | \\\"not_stated\\\", \\\"evidence\\\": exact quote or null},\\n  \\\"intent\\\":                  {\\\"value\\\": \\\"explore_qme_certification\\\" | \\\"established_qme_joining\\\" | \\\"other\\\" | \\\"unclear\\\", \\\"evidence\\\": exact quote or null},\\n  \\\"call_availability\\\":       {\\\"value\\\": string or null, \\\"evidence\\\": exact quote or null},\\n  \\\"questions\\\":   [questions the physician asked, short],\\n  \\\"ambiguities\\\": [what a coordinator should clarify, short; empty if nothing],\\n  \\\"proposed_reply\\\": string\\n}\\n\\nRules:\\n- Report only what the physician states. If something is not stated, use null (or \\\"not_stated\\\" / \\\"unclear\\\"). A sparse message gives a sparse result; that is correct.\\n- Every non-null value needs \\\"evidence\\\": a short quote copied word for word from the credentials or the message. If you cannot quote it, the value is null.\\n- certification_statement is what they say about their QME certification. intent is what they want next. Wanting or being interested in becoming a QME is intent, not a certification status: use \\\"not_stated\\\" unless they say they hold the certification, say they are actively working toward it (course taken, exam scheduled or passed, application filed), or say they are not certified.\\n- call_availability is only when they can talk. It says nothing about capacity to perform evaluations.\\n- A physician licensed outside California is not rejected: note it in ambiguities so the coordinator can ask.\\n- Do not assess eligibility, score the physician, or promise anything.\\n- proposed_reply: a short, warm email from the recruiting team that answers what they asked where possible in general terms, proposes a first conversation, and asks only for what is missing for that conversation. Always open with \\\"Hello,\\\" (the workflow adds the name; you never receive it). Do not confirm or accept a specific time on the team's behalf: acknowledge when they said they are available and say the team will propose a time. Plain text, no subject line, no em dashes, end with \\\"Best regards,\\\" on its own line. Do not invent facts about the company, fees, timelines or acceptance.\" },\n    { role: 'user', content: JSON.stringify(allowed) },\n  ],\n};\nreturn [{ json: { contact, needsModel: true, reused: false, modelRequest } }];"
+      },
+      "id": "n004-prepare-interpretation",
+      "name": "Prepare interpretation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.needsModel }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n005-model-needed-",
+      "name": "Model needed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuration').first().json.cfg.modelBase }}/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.modelRequest) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "n006-ask-the-model",
+      "name": "Ask the model",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        180
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ExpModelKey00001",
+          "name": "Model API key (Authorization: Bearer)"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The model proposes; this code checks. Any value whose quoted evidence is not found\n// word for word in what the physician wrote is dropped and flagged.\nconst prep = $('Prepare interpretation').first().json;\nconst c = prep.contact;\nconst flags = [];\nlet raw = ((($input.first().json.choices || [])[0] || {}).message || {}).content || '';\nraw = raw.replace(/^\\s*```(?:json)?\\s*/i, '').replace(/```\\s*$/, '');\nlet m;\ntry { m = JSON.parse(raw); } catch (e) { throw new Error('Model reply is not valid JSON'); }\n\nconst norm = s => String(s || '').toLowerCase().replace(/[\\u2018\\u2019]/g, \"'\").replace(/[\\u201c\\u201d]/g, '\"').replace(/\\s+/g, ' ').trim();\nconst source = norm(c.message + ' ' + c.credentials);\nconst field = (name, allowed, fallback) => {\n  const f = m[name] || {};\n  let value = f.value ?? null, evidence = f.evidence ?? null;\n  if (allowed && !allowed.includes(value)) { flags.push('invalid_value:' + name); value = fallback; evidence = null; }\n  const empty = value === null || value === fallback || (Array.isArray(value) && value.length === 0);\n  if (!empty) {\n    // Tolerate the quote marks and final period a model sometimes wraps a quote in; nothing else.\n    const q = norm(evidence).replace(/^[\"']+|[\"'.]+$/g, '').trim();\n    if (!evidence || !q || !source.includes(q)) { flags.push('unsupported:' + name); value = fallback; evidence = null; }\n  }\n  // Store the quote without the quote marks a model sometimes adds around it.\n  if (evidence) evidence = String(evidence).trim().replace(/^[\"'“‘]+|[\"'”’]+$/g, '');\n  return { value, evidence };\n};\nconst result = {\n  specialty: field('specialty', null, null),\n  license_states: field('license_states', null, null),\n  certification_statement: field('certification_statement', ['says_certified_qme', 'says_in_progress', 'says_not_certified', 'not_stated'], 'not_stated'),\n  intent: field('intent', ['explore_qme_certification', 'established_qme_joining', 'other', 'unclear'], 'unclear'),\n  call_availability: field('call_availability', null, null),\n  questions: Array.isArray(m.questions) ? m.questions.slice(0, 5).map(String) : [],\n  ambiguities: Array.isArray(m.ambiguities) ? m.ambiguities.slice(0, 5).map(String) : [],\n  // The model never sees the name; the greeting is filled in here from the contact record.\n  proposed_reply: String(m.proposed_reply || '').slice(0, 2000).replace(/^\\s*Hello,/, c.lastName ? 'Dear Dr. ' + c.lastName + ',' : 'Hello,'),\n  flags,\n  source: 'model',\n};\nif (result.license_states.value && !Array.isArray(result.license_states.value)) result.license_states.value = [String(result.license_states.value)];\n\n// Review routing is ordinary code, not model judgment.\nconst v = c.verifiedQmeStatus, s = result.certification_statement.value;\nconst contradicts =\n  (v === 'certified_qme' && (s === 'says_not_certified' || s === 'says_in_progress')) ||\n  (v === 'not_certified' && s === 'says_certified_qme') ||\n  (v === 'in_progress' && s === 'says_not_certified');\nconst states = result.license_states.value || [];\nconst outsideCalifornia = states.length > 0 && !states.some(x => /^(CA|california)$/i.test(String(x).trim()));\nif (contradicts) {\n  result.review_status = 'conflict_with_verified_record';\n  flags.push('conflict:verified_qme_status=' + v + ',message_says=' + s);\n} else if (outsideCalifornia || result.intent.value === 'unclear' || result.ambiguities.length) {\n  result.review_status = 'needs_clarification';\n  if (outsideCalifornia) flags.push('clarify:licensed_states_without_california');\n} else {\n  result.review_status = 'ready_for_review';\n}\nif (!result.proposed_reply) { flags.push('no_proposed_reply'); }\nreturn [{ json: { contact: c, result } }];"
+      },
+      "id": "n007-check-the-interpretation",
+      "name": "Check the interpretation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "with u as (\n  update recruiting.inquiry_ledger\n     set model_result = coalesce(model_result, $2::jsonb), last_step = 'interpreted', updated_at = now()\n   where submission_key = $1\n  returning submission_key)\ninsert into recruiting.event_log (submission_key, step, outcome, detail)\nselect submission_key, 'interpret', $3, $4 from u\nreturning submission_key",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, JSON.stringify($json.result), $('Prepare interpretation').first().json.reused ? 'reused' : 'saved', $json.result.source + ':' + $json.result.review_status ] }}"
+        }
+      },
+      "id": "n008-save-interpretation",
+      "name": "Save interpretation",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1820,
+        360
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (n8n host, recruiting schema)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Configuration').first().json.suggestions_written === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n009-suggestions-already-written-",
+      "name": "Suggestions already written?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Suggestions go to separate ai_inquiry_* properties. Lifecycle stage, owner and any\n// staff-verified value are never written by this workflow.\nconst cfg = $('Configuration').first().json.cfg, P = cfg.props;\nconst r = $('Check the interpretation').isExecuted ? $('Check the interpretation').first().json.result : $('Prepare interpretation').first().json.result;\nconst ns = v => (v === null || v === undefined || v === '' ? 'not stated' : v);\nconst properties = {\n  [P.sugSpecialty]: ns(r.specialty.value),\n  [P.sugLicenseStates]: ns(Array.isArray(r.license_states.value) ? r.license_states.value.join(', ') : r.license_states.value),\n  [P.sugCertification]: r.certification_statement.value,\n  [P.sugIntent]: r.intent.value,\n  [P.sugCallWindow]: ns(r.call_availability.value),\n  [P.sugReviewStatus]: r.review_status,\n  [P.sugFlags]: (r.flags || []).join('; ') || 'none',\n  [P.sugRef]: $('Configuration').first().json.submission_key,\n};\nreturn [{ json: { properties } }];"
+      },
+      "id": "n010-suggestion-fields",
+      "name": "Suggestion fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2340,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $('Configuration').first().json.cfg.hubspotBase }}/crm/v3/objects/contacts/{{ $('Configuration').first().json.contact_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: $json.properties }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "n011-write-suggestions-to-contact",
+      "name": "Write suggestions to contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2600,
+        180
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "ExpHubspotTok001",
+          "name": "HubSpot private app token"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "with u as (\n  update recruiting.inquiry_ledger set suggestions_written = true, last_step = 'suggestions_written', updated_at = now()\n   where submission_key = $1 returning submission_key)\ninsert into recruiting.event_log (submission_key, step, outcome) select submission_key, 'suggestions', 'written' from u\nreturning submission_key",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key ] }}"
+        }
+      },
+      "id": "n012-mark-suggestions-written",
+      "name": "Mark suggestions written",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2860,
+        180
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (n8n host, recruiting schema)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$('Configuration').first().json.task_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n013-task-already-recorded-",
+      "name": "Task already recorded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3120,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Configuration').first().json.cfg.hubspotBase }}/crm/v4/objects/contacts/{{ $('Configuration').first().json.contact_id }}/associations/tasks",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "n014-list-the-contact-s-tasks",
+      "name": "List the contact's tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3380,
+        540
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "ExpHubspotTok001",
+          "name": "HubSpot private app token"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ids = ($input.first().json.results || []).map(r => String(r.toObjectId));\nreturn [{ json: { ids } }];"
+      },
+      "id": "n015-task-ids",
+      "name": "Task ids",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3640,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.ids.length > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n016-any-tasks-",
+      "name": "Any tasks?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3900,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuration').first().json.cfg.hubspotBase }}/crm/v3/objects/tasks/batch/read",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ inputs: $json.ids.map(id => ({ id })), properties: ['hs_task_subject','hs_task_body','hs_task_status','hs_timestamp','hubspot_owner_id'] }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "n017-read-those-tasks",
+      "name": "Read those tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4160,
+        360
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "ExpHubspotTok001",
+          "name": "HubSpot private app token"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Three outcomes, decided by plain code:\n//  reconciled: a task carrying THIS submission's reference already exists (an earlier\n//              attempt created it but never got the answer), so nothing is created;\n//  appended:   the physician already has an open review task from this workflow, so the\n//              new inquiry is added to it instead of opening a second work item;\n//  created:    otherwise, one new task, associated to the contact.\nconst cfgItem = $('Configuration').first().json;\nconst cfg = cfgItem.cfg, key = cfgItem.submission_key;\nconst r = $('Check the interpretation').isExecuted ? $('Check the interpretation').first().json.result : $('Prepare interpretation').first().json.result;\nconst c = $('Prepare interpretation').first().json.contact;\nconst tasks = ($input.first().json.results || []).map(t => ({ id: String(t.id), ...t.properties }));\nconst ref = 'ref:' + key;\n\nconst esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst ns = v => (v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length)) ? '<i>not stated</i>' : esc(Array.isArray(v) ? v.join(', ') : v);\nconst label = {\n  says_certified_qme: 'says they are a certified QME', says_in_progress: 'says certification is in progress',\n  says_not_certified: 'says they are not certified', not_stated: 'not stated',\n  explore_qme_certification: 'exploring QME certification', established_qme_joining: 'established QME looking at the group',\n  other: 'other request', unclear: 'unclear',\n  ready_for_review: 'Ready for review', needs_clarification: 'Needs clarification',\n  conflict_with_verified_record: 'Conflicts with the verified record', needs_information: 'Needs information',\n};\nconst quote = f => f && f.evidence ? ' <span style=\"color:#666\">(\"' + esc(f.evidence) + '\")</span>' : '';\nconst section =\n  '<p><b>' + esc(label[r.review_status] || r.review_status) + '</b>. Nothing has been sent to the physician.</p>' +\n  '<p><b>What they wrote</b><br>' + esc(c.message || '(empty message)') + '</p>' +\n  '<p><b>Suggested reading, from their own words</b><br>' +\n  'Specialty: ' + ns(r.specialty.value) + quote(r.specialty) + '<br>' +\n  'Licensed in: ' + ns(r.license_states.value) + quote(r.license_states) + '<br>' +\n  'Certification: ' + esc(label[r.certification_statement.value] || r.certification_statement.value) + quote(r.certification_statement) + '<br>' +\n  'Looking for: ' + esc(label[r.intent.value] || r.intent.value) + quote(r.intent) + '<br>' +\n  'Available for a first call: ' + ns(r.call_availability.value) + quote(r.call_availability) + ' (a call window, not evaluation capacity)</p>' +\n  (c.verifiedQmeStatus ? '<p><b>Verified record kept as is</b>: QME status ' + esc(({ certified_qme: 'certified QME', in_progress: 'in progress', not_certified: 'not certified' })[c.verifiedQmeStatus] || c.verifiedQmeStatus) + (r.review_status === 'conflict_with_verified_record' ? '. The new message does not match it; please check with the physician.' : '') + '</p>' : '') +\n  ((r.ambiguities || []).length ? '<p><b>To clarify</b><br>' + r.ambiguities.map(esc).join('<br>') + '</p>' : '') +\n  '<p><b>Proposed reply</b> (edit, then send it yourself)<br>' + esc(r.proposed_reply).replace(/\\n/g, '<br>') + '</p>' +\n  '<p style=\"color:#999;font-size:11px\">' + cfg.taskMarker + ' ' + ref + '</p>';\n\nconst exact = tasks.find(t => (t.hs_task_body || '').includes(ref));\nif (exact) return [{ json: { action: 'reconciled', taskId: exact.id } }];\n\nconst open = tasks.find(t => (t.hs_task_body || '').includes(cfg.taskMarker) && t.hs_task_status !== 'COMPLETED');\nif (open) {\n  const body = (open.hs_task_body || '') + '<hr><p><b>New inquiry from the same physician</b>, received ' + esc(new Date(cfgItem.conversion_at).toISOString().slice(0, 16).replace('T', ' ')) + ' UTC</p>' + section;\n  return [{ json: { action: 'appended', taskId: open.id, request: { properties: { hs_task_body: body, hs_task_priority: r.review_status === 'conflict_with_verified_record' ? 'HIGH' : (open.hs_task_priority || 'MEDIUM') } } } }];\n}\n\n// Due: next business day, 10:00 Pacific.\nconst due = new Date(Date.now() + 24 * 3600e3);\nwhile ([0, 6].includes(due.getUTCDay())) due.setUTCDate(due.getUTCDate() + 1);\nconst ymd = due.toISOString().slice(0, 10);\nconst dueAt = new Date(ymd + 'T' + String(cfg.dueHourPacific + 7).padStart(2, '0') + ':00:00Z');\nconst who = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unnamed physician';\nconst request = {\n  properties: {\n    hs_task_subject: 'Physician inquiry: ' + who + (c.credentials ? ', ' + c.credentials : '') + ' (review and reply)',\n    hs_task_body: section,\n    hs_task_status: 'NOT_STARTED',\n    hs_task_priority: r.review_status === 'conflict_with_verified_record' ? 'HIGH' : 'MEDIUM',\n    hs_task_type: 'TODO',\n    hs_timestamp: dueAt.toISOString(),\n    hubspot_owner_id: String(cfg.recruitingOwnerId),\n  },\n  associations: [{ to: { id: c.id }, types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 204 }] }],\n};\nreturn [{ json: { action: 'created', request } }];"
+      },
+      "id": "n018-plan-the-review-task",
+      "name": "Plan the review task",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4420,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ ({ created: 0, appended: 1, reconciled: 2 })[$json.action] }}"
+      },
+      "id": "n019-route-by-action",
+      "name": "Route by action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        4680,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuration').first().json.cfg.hubspotBase }}/crm/v3/objects/tasks",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "n020-create-review-task",
+      "name": "Create review task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4940,
+        360
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "ExpHubspotTok001",
+          "name": "HubSpot private app token"
+        }
+      },
+      "retryOnFail": false,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $('Configuration').first().json.cfg.hubspotBase }}/crm/v3/objects/tasks/{{ $json.taskId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotAppToken",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "n021-add-inquiry-to-open-task",
+      "name": "Add inquiry to open task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4940,
+        540
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "ExpHubspotTok001",
+          "name": "HubSpot private app token"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const plan = $('Plan the review task').first().json;\nconst id = $input.first().json.id ? String($input.first().json.id) : plan.taskId;\nreturn [{ json: { task_id: id, task_action: plan.action } }];"
+      },
+      "id": "n022-task-outcome",
+      "name": "Task outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5200,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "with u as (\n  update recruiting.inquiry_ledger\n     set status = 'done', task_id = coalesce($2, task_id), task_action = coalesce($3, task_action),\n         last_step = 'done', lease_until = null, completed_at = now(), updated_at = now()\n   where submission_key = $1\n  returning submission_key, task_id, task_action)\ninsert into recruiting.event_log (submission_key, step, outcome, detail)\nselect submission_key, 'task', 'done', coalesce($3, 'already recorded') || ' ' || task_id from u\nreturning submission_key",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $json.task_id || null, $json.task_action || null ] }}"
+        }
+      },
+      "id": "n023-mark-done",
+      "name": "Mark done",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        5460,
+        360
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (n8n host, recruiting schema)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep only the step and the HTTP status: alerts never carry the physician's message.\nconst e = $input.first().json.error || $input.first().json;\nconst text = JSON.stringify(e).slice(0, 2000);\nconst status = (e && (e.httpCode || e.status)) || (text.match(/\\b(4\\d\\d|5\\d\\d)\\b/) || [])[1] || (/ECONNRESET|socket hang up|ETIMEDOUT|timeout/i.test(text) ? 'no response' : 'error');\nreturn [{ json: { step: $prevNode.name, status: String(status) } }];"
+      },
+      "id": "n024-describe-the-failure",
+      "name": "Describe the failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "with u as (\n  update recruiting.inquiry_ledger\n     set status = case when attempts >= $3 then 'failed' else 'retry' end,\n         next_attempt_at = now() + make_interval(secs => least(3600, $5 * power(2, greatest(attempts - 1, 0)))::int),\n         last_step = $2, last_error = $2 || ': ' || $4, lease_until = null, updated_at = now()\n   where submission_key = $1\n  returning submission_key, contact_id, status, attempts, last_error),\nev as (\n  insert into recruiting.event_log (submission_key, step, outcome, detail)\n  select submission_key, $2, 'failed', $4 || ' (attempt ' || attempts || ', now ' || status || ')' from u)\nselect * from u",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $json.step, $('Configuration').first().json.cfg.maxAttempts, $json.status, $('Configuration').first().json.cfg.retryBaseSeconds ] }}"
+        }
+      },
+      "id": "n025-record-the-failure",
+      "name": "Record the failure",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2340,
+        900
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (n8n host, recruiting schema)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.status === 'failed' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n026-out-of-attempts-",
+      "name": "Out of attempts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2600,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALERT_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: 'Physician inquiry workflow: submission ' + $json.submission_key + ' stopped after ' + $json.attempts + ' attempts at step \"' + $json.last_error + '\". Contact record ' + $json.contact_id + '. Nothing was sent to the physician. Check the execution and the ledger.', submission_key: $json.submission_key, contact_id: $json.contact_id, last_error: $json.last_error, attempts: $json.attempts }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "n027-send-failure-alert",
+      "name": "Send failure alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2860,
+        720
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "update recruiting.inquiry_ledger set alerted_at = now() where submission_key = $1 returning submission_key",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key ] }}"
+        }
+      },
+      "id": "n028-mark-alerted",
+      "name": "Mark alerted",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3120,
+        720
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (n8n host, recruiting schema)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ 'Step \"' + $('Describe the failure').first().json.step + '\" failed (' + $('Describe the failure').first().json.status + '). Ledger status: ' + $('Record the failure').first().json.status + '.' }}"
+      },
+      "id": "n029-fail-visibly",
+      "name": "Fail visibly",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        3380,
+        900
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Read contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read contact": {
+      "main": [
+        [
+          {
+            "node": "Prepare interpretation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Describe the failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare interpretation": {
+      "main": [
+        [
+          {
+            "node": "Model needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model needed?": {
+      "main": [
+        [
+          {
+            "node": "Ask the model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save interpretation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask the model": {
+      "main": [
+        [
+          {
+            "node": "Check the interpretation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Describe the failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check the interpretation": {
+      "main": [
+        [
+          {
+            "node": "Save interpretation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save interpretation": {
+      "main": [
+        [
+          {
+            "node": "Suggestions already written?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suggestions already written?": {
+      "main": [
+        [
+          {
+            "node": "Task already recorded?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Suggestion fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suggestion fields": {
+      "main": [
+        [
+          {
+            "node": "Write suggestions to contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write suggestions to contact": {
+      "main": [
+        [
+          {
+            "node": "Mark suggestions written",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Describe the failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark suggestions written": {
+      "main": [
+        [
+          {
+            "node": "Task already recorded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task already recorded?": {
+      "main": [
+        [
+          {
+            "node": "Mark done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "List the contact's tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List the contact's tasks": {
+      "main": [
+        [
+          {
+            "node": "Task ids",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Describe the failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task ids": {
+      "main": [
+        [
+          {
+            "node": "Any tasks?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any tasks?": {
+      "main": [
+        [
+          {
+            "node": "Read those tasks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Plan the review task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read those tasks": {
+      "main": [
+        [
+          {
+            "node": "Plan the review task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Describe the failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan the review task": {
+      "main": [
+        [
+          {
+            "node": "Route by action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by action": {
+      "main": [
+        [
+          {
+            "node": "Create review task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add inquiry to open task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Task outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create review task": {
+      "main": [
+        [
+          {
+            "node": "Task outcome",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Describe the failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add inquiry to open task": {
+      "main": [
+        [
+          {
+            "node": "Task outcome",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Describe the failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task outcome": {
+      "main": [
+        [
+          {
+            "node": "Mark done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Describe the failure": {
+      "main": [
+        [
+          {
+            "node": "Record the failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record the failure": {
+      "main": [
+        [
+          {
+            "node": "Out of attempts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Out of attempts?": {
+      "main": [
+        [
+          {
+            "node": "Send failure alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail visibly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send failure alert": {
+      "main": [
+        [
+          {
+            "node": "Mark alerted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark alerted": {
+      "main": [
+        [
+          {
+            "node": "Fail visibly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "saveManualExecutions": true
+  },
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

@@ -1,0 +1,314 @@
+{
+  "n8n": "2.42.2",
+  "ranAt": "2026-10-01T18:48:51.466Z",
+  "scenarios": [
+    {
+      "id": "ordinary",
+      "started": "2026-10-01T18:45:50.502Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "exactly one review task",
+          "ok": true
+        },
+        {
+          "label": "task associated to the contact",
+          "ok": true
+        },
+        {
+          "label": "task assigned to the recruiting owner",
+          "ok": true
+        },
+        {
+          "label": "task has a due date",
+          "ok": true,
+          "detail": "2026-10-02T17:00:00.000Z"
+        },
+        {
+          "label": "proposed reply is in the task body",
+          "ok": true
+        },
+        {
+          "label": "one model call, two fields sent",
+          "ok": true,
+          "detail": [
+            [
+              "credentials",
+              "message"
+            ]
+          ]
+        },
+        {
+          "label": "no email sent (no email or communication endpoint called)",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "established",
+      "started": "2026-10-01T18:45:57.771Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "exactly one review task",
+          "ok": true
+        },
+        {
+          "label": "intent read as an established QME",
+          "ok": true,
+          "detail": "established_qme_joining"
+        }
+      ]
+    },
+    {
+      "id": "sparse",
+      "started": "2026-10-01T18:46:03.477Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "no model call for a one-word message",
+          "ok": true
+        },
+        {
+          "label": "review status: needs information",
+          "ok": true
+        },
+        {
+          "label": "everything else left as not stated",
+          "ok": true
+        },
+        {
+          "label": "still one review task, with a reply asking for the basics",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "outOfState",
+      "started": "2026-10-01T18:46:08.024Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "not rejected: a review task exists",
+          "ok": true
+        },
+        {
+          "label": "routed to clarification",
+          "ok": true,
+          "detail": "needs_clarification"
+        },
+        {
+          "label": "flagged: licensed states without California",
+          "ok": true,
+          "detail": "clarify:licensed_states_without_california"
+        }
+      ]
+    },
+    {
+      "id": "conflict",
+      "started": "2026-10-01T18:46:14.838Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "verified QME status unchanged",
+          "ok": true
+        },
+        {
+          "label": "contact owner unchanged",
+          "ok": true
+        },
+        {
+          "label": "lifecycle stage unchanged",
+          "ok": true
+        },
+        {
+          "label": "conflict flagged for review",
+          "ok": true,
+          "detail": "conflict_with_verified_record"
+        },
+        {
+          "label": "task raised to high priority",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "unclear",
+      "started": "2026-10-01T18:46:21.053Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "routed to clarification",
+          "ok": true,
+          "detail": "needs_clarification"
+        },
+        {
+          "label": "no certification status invented",
+          "ok": true,
+          "detail": "not_stated"
+        }
+      ]
+    },
+    {
+      "id": "doubleDelivery",
+      "started": "2026-10-01T18:46:26.746Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "two polls ran at the same time",
+          "ok": true,
+          "detail": 3
+        },
+        {
+          "label": "the submission was processed once",
+          "ok": true,
+          "detail": 1
+        },
+        {
+          "label": "one contact update",
+          "ok": true
+        },
+        {
+          "label": "one review task",
+          "ok": true
+        },
+        {
+          "label": "one model call",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "samePhysicianAgain",
+      "started": "2026-10-01T18:46:36.861Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "both inquiries recorded and done",
+          "ok": true
+        },
+        {
+          "label": "the second inquiry was interpreted, not skipped",
+          "ok": true
+        },
+        {
+          "label": "still one open review task for this physician",
+          "ok": true
+        },
+        {
+          "label": "second inquiry added to that task",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "taskFailsAfterUpdate",
+      "started": "2026-10-01T18:46:48.463Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "first task creation failed (502)",
+          "ok": true
+        },
+        {
+          "label": "contact updated once, not again on retry",
+          "ok": true
+        },
+        {
+          "label": "model called once, interpretation reused",
+          "ok": true
+        },
+        {
+          "label": "one review task in the end",
+          "ok": true
+        },
+        {
+          "label": "finished on attempt 2",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "responseLost",
+      "started": "2026-10-01T18:46:54.722Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "the task was created but the answer never arrived",
+          "ok": true
+        },
+        {
+          "label": "no second task created",
+          "ok": true
+        },
+        {
+          "label": "found by its reference and reconciled",
+          "ok": true,
+          "detail": "reconciled"
+        }
+      ]
+    },
+    {
+      "id": "restartMidway",
+      "started": "2026-10-01T18:47:07.929Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "n8n restarted while the task call was in flight",
+          "ok": true,
+          "detail": "processing"
+        },
+        {
+          "label": "the inquiry was not lost: picked up again after the lease expired",
+          "ok": true
+        },
+        {
+          "label": "exactly one review task",
+          "ok": true
+        },
+        {
+          "label": "model not called again",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "givesUp",
+      "started": "2026-10-01T18:48:26.474Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "stopped after 3 attempts",
+          "ok": true,
+          "detail": {
+            "submission_key": "1000:1790880506520",
+            "status": "failed",
+            "attempts": 3,
+            "suggestions_written": false,
+            "task_id": null,
+            "task_action": null,
+            "last_step": "Read contact",
+            "last_error": "Read contact: 503",
+            "alerted": true
+          }
+        },
+        {
+          "label": "one failure alert sent",
+          "ok": true
+        },
+        {
+          "label": "alert carries no message text, name or email",
+          "ok": true
+        },
+        {
+          "label": "failed executions visible in n8n",
+          "ok": true
+        },
+        {
+          "label": "nothing written to HubSpot",
+          "ok": true
+        }
+      ]
+    }
+  ]
+}

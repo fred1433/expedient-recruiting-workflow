@@ -1,0 +1,274 @@
+{
+  "id": "taskFailsAfterUpdate",
+  "started": "2026-10-01T18:46:48.463Z",
+  "n8n": "2.42.2",
+  "checks": [
+    {
+      "label": "first task creation failed (502)",
+      "ok": true
+    },
+    {
+      "label": "contact updated once, not again on retry",
+      "ok": true
+    },
+    {
+      "label": "model called once, interpretation reused",
+      "ok": true
+    },
+    {
+      "label": "one review task in the end",
+      "ok": true
+    },
+    {
+      "label": "finished on attempt 2",
+      "ok": true
+    }
+  ],
+  "contacts": [
+    {
+      "id": "1000",
+      "properties": {
+        "hs_object_id": "1000",
+        "email": "hpark.pmr@example.test",
+        "first_conversion_date": "2026-10-01T18:46:48.502Z",
+        "createdate": "2026-10-01T18:46:48.502Z",
+        "firstname": "Helen",
+        "lastname": "Park",
+        "physician_credentials": "MD (PM&R)",
+        "phone": "(555) 010-3392",
+        "message": "Board certified in physical medicine and rehabilitation, licensed in Arizona and Nevada. Is QME work possible if I'm not licensed in California yet? Any weekday after 5pm works for a call.",
+        "recent_conversion_date": "2026-10-01T18:46:48.502Z",
+        "recent_conversion_event_name": "Join Expedient",
+        "ai_inquiry_specialty": "physical medicine and rehabilitation",
+        "ai_inquiry_license_states": "AZ, NV",
+        "ai_inquiry_certification_statement": "not_stated",
+        "ai_inquiry_intent": "explore_qme_certification",
+        "ai_inquiry_call_availability": "Any weekday after 5pm",
+        "ai_inquiry_review_status": "needs_clarification",
+        "ai_inquiry_flags": "clarify:licensed_states_without_california",
+        "ai_inquiry_ref": "1000:1790880408502"
+      },
+      "createdAt": "2026-10-01T18:46:48.502Z",
+      "updatedAt": "2026-10-01T18:46:51.039Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "1001",
+      "properties": {
+        "hs_object_id": "1001",
+        "hs_createdate": "2026-10-01T18:46:54.145Z",
+        "hs_task_subject": "Physician inquiry: Helen Park, MD (PM&R) (review and reply)",
+        "hs_task_body": "<p><b>Needs clarification</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>Board certified in physical medicine and rehabilitation, licensed in Arizona and Nevada. Is QME work possible if I'm not licensed in California yet? Any weekday after 5pm works for a call.</p><p><b>Suggested reading, from their own words</b><br>Specialty: physical medicine and rehabilitation <span style=\"color:#666\">(\"Board certified in physical medicine and rehabilitation\")</span><br>Licensed in: AZ, NV <span style=\"color:#666\">(\"licensed in Arizona and Nevada\")</span><br>Certification: not stated<br>Looking for: exploring QME certification <span style=\"color:#666\">(\"Is QME work possible if I'm not licensed in California yet?\")</span><br>Available for a first call: Any weekday after 5pm <span style=\"color:#666\">(\"Any weekday after 5pm works for a call.\")</span> (a call window, not evaluation capacity)</p><p><b>To clarify</b><br>Not licensed in California yet<br>Whether they are already QME certified or are exploring becoming a QME</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Park,<br><br>Thank you for reaching out. We’d be happy to discuss QME work and the general path for physicians who are exploring it. We can also talk through how California licensure fits into that process.<br><br>You mentioned that any weekday after 5pm works for a call, and we’ll have the team propose a time.<br><br>To help prepare for the conversation, please let us know whether you currently hold a California medical license and whether you are already QME certified or are still exploring certification.<br><br>Best regards,</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880408502</p>",
+        "hs_task_status": "NOT_STARTED",
+        "hs_task_priority": "MEDIUM",
+        "hs_task_type": "TODO",
+        "hs_timestamp": "2026-10-02T17:00:00.000Z",
+        "hubspot_owner_id": "900001"
+      },
+      "createdAt": "2026-10-01T18:46:54.145Z",
+      "updatedAt": "2026-10-01T18:46:54.145Z"
+    }
+  ],
+  "assoc": {
+    "1000": [
+      "1001"
+    ]
+  },
+  "alerts": [],
+  "modelCalls": [
+    {
+      "at": "2026-10-01T18:46:48.625Z",
+      "mode": "proxy",
+      "model": "gpt-5.4-mini-2026-03-17",
+      "fieldsSent": [
+        "credentials",
+        "message"
+      ],
+      "bytesSent": 228,
+      "status": 200,
+      "ms": 2379,
+      "content": "{\n  \"specialty\": {\n    \"value\": \"physical medicine and rehabilitation\",\n    \"evidence\": \"Board certified in physical medicine and rehabilitation\"\n  },\n  \"license_states\": {\n    \"value\": [\n      \"AZ\",\n      \"NV\"\n    ],\n    \"evidence\": \"licensed in Arizona and Nevada\"\n  },\n  \"certification_statement\": {\n    \"value\": \"not_stated\",\n    \"evidence\": null\n  },\n  \"intent\": {\n    \"value\": \"explore_qme_certification\",\n    \"evidence\": \"Is QME work possible if I'm not licensed in California yet?\"\n  },\n  \"call_availability\": {\n    \"value\": \"Any weekday after 5pm\",\n    \"evidence\": \"Any weekday after 5pm works for a call.\"\n  },\n  \"questions\": [\n    \"Is QME work possible if I'm not licensed in California yet?\"\n  ],\n  \"ambiguities\": [\n    \"Not licensed in California yet\",\n    \"Whether they are already QME certified or are exploring becoming a QME\"\n  ],\n  \"proposed_reply\": \"Hello,\\n\\nThank you for reaching out. We’d be happy to discuss QME work and the general path for physicians who are exploring it. We can also talk through how California licensure fits into that process.\\n\\nYou mentioned that any weekday after 5pm works for a call, and we’ll have the team propose a time.\\n\\nTo help prepare for the conversation, please let us know whether you currently hold a California medical license and whether you are already QME certified or are still exploring certification.\\n\\nBest regards,\"\n}",
+      "servedModel": "gpt-5.4-mini-2026-03-17",
+      "usage": {
+        "prompt_tokens": 709,
+        "completion_tokens": 458,
+        "total_tokens": 1167,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 104,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    }
+  ],
+  "http": [
+    {
+      "at": "2026-10-01T18:46:48.548Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:48.603Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:48.625Z",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:51.039Z",
+      "method": "PATCH",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:51.056Z",
+      "method": "GET",
+      "path": "/crm/v4/objects/contacts/1000/associations/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:51.119Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/tasks",
+      "fault": "error",
+      "status": 502
+    },
+    {
+      "at": "2026-10-01T18:46:54.045Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:54.098Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:54.122Z",
+      "method": "GET",
+      "path": "/crm/v4/objects/contacts/1000/associations/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:54.145Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/tasks",
+      "status": 201
+    }
+  ],
+  "ledger": [
+    {
+      "submission_key": "1000:1790880408502",
+      "status": "done",
+      "attempts": 2,
+      "suggestions_written": true,
+      "task_id": "1001",
+      "task_action": "created",
+      "last_step": "done",
+      "last_error": "Create review task: 502",
+      "alerted": false
+    }
+  ],
+  "events": [
+    {
+      "at": "18:46:48.561",
+      "submission_key": "1000:1790880408502",
+      "step": "poll",
+      "outcome": "recorded",
+      "detail": null
+    },
+    {
+      "at": "18:46:48.567",
+      "submission_key": "1000:1790880408502",
+      "step": "claim",
+      "outcome": "attempt 1",
+      "detail": null
+    },
+    {
+      "at": "18:46:51.023",
+      "submission_key": "1000:1790880408502",
+      "step": "interpret",
+      "outcome": "saved",
+      "detail": "model:needs_clarification"
+    },
+    {
+      "at": "18:46:51.046",
+      "submission_key": "1000:1790880408502",
+      "step": "suggestions",
+      "outcome": "written",
+      "detail": null
+    },
+    {
+      "at": "18:46:51.150",
+      "submission_key": "1000:1790880408502",
+      "step": "Create review task",
+      "outcome": "failed",
+      "detail": "502 (attempt 1, now retry)"
+    },
+    {
+      "at": "18:46:54.064",
+      "submission_key": "1000:1790880408502",
+      "step": "claim",
+      "outcome": "attempt 2",
+      "detail": "resuming after: Create review task: 502"
+    },
+    {
+      "at": "18:46:54.111",
+      "submission_key": "1000:1790880408502",
+      "step": "interpret",
+      "outcome": "reused",
+      "detail": "model:needs_clarification"
+    },
+    {
+      "at": "18:46:54.155",
+      "submission_key": "1000:1790880408502",
+      "step": "task",
+      "outcome": "done",
+      "detail": "created 1001"
+    }
+  ],
+  "executions": [
+    {
+      "id": 279,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "18:46:48",
+      "stopped": "18:46:51"
+    },
+    {
+      "id": 280,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "error",
+      "started": "18:46:48",
+      "stopped": "18:46:51"
+    },
+    {
+      "id": 281,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "18:46:54",
+      "stopped": "18:46:54"
+    },
+    {
+      "id": 282,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "success",
+      "started": "18:46:54",
+      "stopped": "18:46:54"
+    }
+  ]
+}

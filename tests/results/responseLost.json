@@ -1,0 +1,268 @@
+{
+  "id": "responseLost",
+  "started": "2026-10-01T18:46:54.722Z",
+  "n8n": "2.42.2",
+  "checks": [
+    {
+      "label": "the task was created but the answer never arrived",
+      "ok": true
+    },
+    {
+      "label": "no second task created",
+      "ok": true
+    },
+    {
+      "label": "found by its reference and reconciled",
+      "ok": true,
+      "detail": "reconciled"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "1000",
+      "properties": {
+        "hs_object_id": "1000",
+        "email": "gliu@example.test",
+        "first_conversion_date": "2026-10-01T18:46:54.767Z",
+        "createdate": "2026-10-01T18:46:54.767Z",
+        "firstname": "Grace",
+        "lastname": "Liu",
+        "physician_credentials": "MD",
+        "phone": "(555) 010-8864",
+        "message": "A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer.",
+        "recent_conversion_date": "2026-10-01T18:46:54.767Z",
+        "recent_conversion_event_name": "Join Expedient",
+        "ai_inquiry_specialty": "pain management",
+        "ai_inquiry_license_states": "not stated",
+        "ai_inquiry_certification_statement": "not_stated",
+        "ai_inquiry_intent": "other",
+        "ai_inquiry_call_availability": "not stated",
+        "ai_inquiry_review_status": "needs_clarification",
+        "ai_inquiry_flags": "none",
+        "ai_inquiry_ref": "1000:1790880414767"
+      },
+      "createdAt": "2026-10-01T18:46:54.767Z",
+      "updatedAt": "2026-10-01T18:46:57.307Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "1001",
+      "properties": {
+        "hs_object_id": "1001",
+        "hs_createdate": "2026-10-01T18:46:57.348Z",
+        "hs_task_subject": "Physician inquiry: Grace Liu, MD (review and reply)",
+        "hs_task_body": "<p><b>Needs clarification</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer.</p><p><b>Suggested reading, from their own words</b><br>Specialty: pain management <span style=\"color:#666\">(\"I do a lot of pain management\")</span><br>Licensed in: <i>not stated</i><br>Certification: not stated<br>Looking for: other request <span style=\"color:#666\">(\"wanted to see what you offer\")</span><br>Available for a first call: <i>not stated</i> (a call window, not evaluation capacity)</p><p><b>To clarify</b><br>Whether they are interested in QME work or only general information<br>Which state(s) they are licensed in</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Liu,<br><br>Thank you for reaching out and for the introduction from your colleague. We’d be glad to share more about what we offer and how we support physicians who are interested in QME work.<br><br>If you’d like, we can set up a first conversation to learn more about your background and what you’re hoping to explore. If you can share your state(s) of licensure and whether you’re currently a QME or looking to get started, that would help us prepare for the call.<br><br>Best regards,</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880414767</p>",
+        "hs_task_status": "NOT_STARTED",
+        "hs_task_priority": "MEDIUM",
+        "hs_task_type": "TODO",
+        "hs_timestamp": "2026-10-02T17:00:00.000Z",
+        "hubspot_owner_id": "900001"
+      },
+      "createdAt": "2026-10-01T18:46:57.348Z",
+      "updatedAt": "2026-10-01T18:46:57.348Z"
+    }
+  ],
+  "assoc": {
+    "1000": [
+      "1001"
+    ]
+  },
+  "alerts": [],
+  "modelCalls": [
+    {
+      "at": "2026-10-01T18:46:54.919Z",
+      "mode": "proxy",
+      "model": "gpt-5.4-mini-2026-03-17",
+      "fieldsSent": [
+        "credentials",
+        "message"
+      ],
+      "bytesSent": 130,
+      "status": 200,
+      "ms": 2354,
+      "content": "{\n  \"specialty\": {\n    \"value\": \"pain management\",\n    \"evidence\": \"“I do a lot of pain management”\"\n  },\n  \"license_states\": {\n    \"value\": null,\n    \"evidence\": null\n  },\n  \"certification_statement\": {\n    \"value\": \"not_stated\",\n    \"evidence\": null\n  },\n  \"intent\": {\n    \"value\": \"other\",\n    \"evidence\": \"“wanted to see what you offer”\"\n  },\n  \"call_availability\": {\n    \"value\": null,\n    \"evidence\": null\n  },\n  \"questions\": [],\n  \"ambiguities\": [\n    \"Whether they are interested in QME work or only general information\",\n    \"Which state(s) they are licensed in\"\n  ],\n  \"proposed_reply\": \"Hello,\\n\\nThank you for reaching out and for the introduction from your colleague. We’d be glad to share more about what we offer and how we support physicians who are interested in QME work.\\n\\nIf you’d like, we can set up a first conversation to learn more about your background and what you’re hoping to explore. If you can share your state(s) of licensure and whether you’re currently a QME or looking to get started, that would help us prepare for the call.\\n\\nBest regards,\"\n}",
+      "servedModel": "gpt-5.4-mini-2026-03-17",
+      "usage": {
+        "prompt_tokens": 688,
+        "completion_tokens": 354,
+        "total_tokens": 1042,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 57,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    }
+  ],
+  "http": [
+    {
+      "at": "2026-10-01T18:46:54.809Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:54.893Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:54.919Z",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:57.307Z",
+      "method": "PATCH",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:57.324Z",
+      "method": "GET",
+      "path": "/crm/v4/objects/contacts/1000/associations/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:46:57.348Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/tasks",
+      "fault": "drop_after_commit",
+      "status": 201,
+      "dropped": true
+    },
+    {
+      "at": "2026-10-01T18:47:03.428Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:47:03.487Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:47:03.515Z",
+      "method": "GET",
+      "path": "/crm/v4/objects/contacts/1000/associations/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T18:47:03.529Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/tasks/batch/read",
+      "status": 200
+    }
+  ],
+  "ledger": [
+    {
+      "submission_key": "1000:1790880414767",
+      "status": "done",
+      "attempts": 2,
+      "suggestions_written": true,
+      "task_id": "1001",
+      "task_action": "reconciled",
+      "last_step": "done",
+      "last_error": "Create review task: no response",
+      "alerted": false
+    }
+  ],
+  "events": [
+    {
+      "at": "18:46:54.828",
+      "submission_key": "1000:1790880414767",
+      "step": "poll",
+      "outcome": "recorded",
+      "detail": null
+    },
+    {
+      "at": "18:46:54.834",
+      "submission_key": "1000:1790880414767",
+      "step": "claim",
+      "outcome": "attempt 1",
+      "detail": null
+    },
+    {
+      "at": "18:46:57.288",
+      "submission_key": "1000:1790880414767",
+      "step": "interpret",
+      "outcome": "saved",
+      "detail": "model:needs_clarification"
+    },
+    {
+      "at": "18:46:57.314",
+      "submission_key": "1000:1790880414767",
+      "step": "suggestions",
+      "outcome": "written",
+      "detail": null
+    },
+    {
+      "at": "18:46:57.371",
+      "submission_key": "1000:1790880414767",
+      "step": "Create review task",
+      "outcome": "failed",
+      "detail": "no response (attempt 1, now retry)"
+    },
+    {
+      "at": "18:47:03.447",
+      "submission_key": "1000:1790880414767",
+      "step": "claim",
+      "outcome": "attempt 2",
+      "detail": "resuming after: Create review task: no response"
+    },
+    {
+      "at": "18:47:03.504",
+      "submission_key": "1000:1790880414767",
+      "step": "interpret",
+      "outcome": "reused",
+      "detail": "model:needs_clarification"
+    },
+    {
+      "at": "18:47:03.549",
+      "submission_key": "1000:1790880414767",
+      "step": "task",
+      "outcome": "done",
+      "detail": "reconciled 1001"
+    }
+  ],
+  "executions": [
+    {
+      "id": 283,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "18:46:54",
+      "stopped": "18:46:57"
+    },
+    {
+      "id": 284,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "error",
+      "started": "18:46:54",
+      "stopped": "18:46:57"
+    },
+    {
+      "id": 285,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "18:47:03",
+      "stopped": "18:47:03"
+    },
+    {
+      "id": 286,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "success",
+      "started": "18:47:03",
+      "stopped": "18:47:03"
+    }
+  ]
+}

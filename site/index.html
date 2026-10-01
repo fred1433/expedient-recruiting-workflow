@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Physician inquiry workflow</title>
+<meta name="description" content="A reference n8n workflow that turns a physician's join inquiry into a reviewable HubSpot task, shown on recorded test runs with synthetic inquiries.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F5F7F4; --desk:#E4EAE3; --desk-edge:#CCD6CB; --sheet:#FFFFFF;
+  --ink:#17212B; --ink-2:#465360; --ink-3:#6B7783; --rule:#D3DAD2;
+  --teal:#1D5C58; --teal-soft:#DCEBE8; --wine:#8C2B47; --wine-soft:#F4E3E8;
+  --amber:#F4DE72; --amber-soft:#FAF0BE; --slate:#2C3E50;
+  --serif:"Source Serif 4", Georgia, serif; --sans:"Public Sans", system-ui, sans-serif;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.55 var(--sans);font-feature-settings:"tnum" 0}
+a{color:var(--teal)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:3px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+@media (max-width:640px){.wrap{padding:0 16px}.desk{padding:14px 12px 18px;border-radius:10px}.views{flex-wrap:wrap}.views button{padding:8px 10px 10px;font-size:14px}.msg{font-size:20px}.fields .row{grid-template-columns:1fr;gap:2px;padding:9px 14px}.top{font-size:13px}}
+
+/* top line */
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 0;border-bottom:1px solid var(--rule);font-size:14px;color:var(--ink-2)}
+.top .by{white-space:nowrap;display:flex;align-items:center;gap:8px;color:var(--ink);font-weight:600;text-decoration:none}
+.top img{width:20px;height:20px}
+
+/* intro */
+.intro{padding:40px 0 22px;display:grid;grid-template-columns:minmax(0,820px);gap:18px}
+h1{font:500 clamp(34px,4.8vw,56px)/1.05 var(--serif);letter-spacing:-.015em;margin:0;font-variation-settings:"opsz" 60}
+.lead{font-size:19px;line-height:1.55;color:var(--ink-2);margin:0;max-width:66ch}
+.recorded{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--ink-3);margin:6px 0 0}
+.recorded b{color:var(--ink);font-weight:600}
+
+/* desk */
+.desk{background:var(--desk);border:1px solid var(--desk-edge);border-radius:14px;padding:22px 22px 26px;margin:10px 0 0}
+.views{display:flex;gap:4px;border-bottom:1px solid var(--desk-edge);margin:0 0 16px;overflow-x:auto;scrollbar-width:none}
+.views button{background:none;border:0;padding:10px 14px 12px;font-weight:600;font-size:15px;color:var(--ink-2);border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;cursor:pointer}
+.views button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--ink)}
+.views small{font-weight:500;color:var(--ink-3);margin-left:6px}
+.cases{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.cases button{background:transparent;border:1px solid var(--desk-edge);border-radius:999px;padding:6px 14px;font-size:14px;cursor:pointer;color:var(--ink-2)}
+.cases button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.caseNote{font-size:15px;color:var(--ink-2);margin:-6px 0 18px;max-width:80ch}
+
+.surface{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:22px;align-items:start}
+@media (max-width:900px){.surface{grid-template-columns:1fr}}
+.colHead{font-size:13px;font-weight:600;color:var(--ink-2);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.colHead svg{flex:none}
+
+/* the form slip */
+.slip{background:var(--sheet);border-radius:6px;box-shadow:0 1px 0 var(--desk-edge),0 0 0 1px var(--desk-edge);padding:0 0 22px;position:relative}
+.slip .band{height:8px;background:repeating-linear-gradient(90deg,var(--slate) 0 22px,transparent 22px 26px);opacity:.9;border-radius:6px 6px 0 0}
+.slip dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:18px 22px 0;font-size:14px}
+.slip dt{color:var(--ink-3)}
+.slip dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.msg{font:400 23px/1.5 var(--serif);margin:18px 22px 0;color:var(--ink);font-variation-settings:"opsz" 24}
+.msg.short{font-size:30px}
+.msgLabel{margin:20px 22px 0;font-size:14px;color:var(--ink-3)}
+mark{background:linear-gradient(transparent 12%,var(--amber-soft) 12%,var(--amber-soft) 92%,transparent 92%);color:inherit;padding:0 1px;border-radius:2px;transition:background .15s}
+mark.on{background:linear-gradient(transparent 6%,var(--amber) 6%,var(--amber) 96%,transparent 96%);box-shadow:0 2px 0 #C9A92B}
+.slipFoot{margin:18px 22px 0;font-size:13px;color:var(--ink-3)}
+
+/* hubspot side */
+.hs{display:grid;gap:18px}
+.sheet{background:var(--sheet);border-radius:6px;box-shadow:0 0 0 1px var(--desk-edge)}
+.fields{padding:6px 0}
+.fields .row{display:grid;grid-template-columns:minmax(150px,210px) 1fr;gap:12px;padding:9px 18px;border-top:1px solid #EEF1ED;cursor:default}
+.fields .row:first-child{border-top:0}
+.fields .row[data-k]{cursor:pointer}
+.fields .row.on{background:#FBF6DA}
+.fields .k{font-size:13px;color:var(--ink-3);padding-top:2px}
+.fields .v{font-size:15px}
+.fields .v .ns{color:var(--ink-3);font-style:italic}
+.fields .ev{display:block;font:italic 400 14px/1.4 var(--serif);color:var(--ink-2);margin-top:2px}
+.pill{display:inline-block;font-size:13px;font-weight:600;padding:1px 10px;border-radius:999px;background:var(--teal-soft);color:var(--teal)}
+.pill.warn{background:#F6EED0;color:#6C5410}
+.pill.bad{background:var(--wine-soft);color:var(--wine)}
+.flags{font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
+.kept{padding:12px 18px;border-top:1px solid #EEF1ED;font-size:14px;background:#F7FAF8;border-radius:0 0 6px 6px}
+.kept b{font-weight:600}
+.kept table{border-collapse:collapse;margin-top:6px;width:100%}
+.kept td{padding:3px 10px 3px 0;vertical-align:top}
+.kept td:last-child{color:var(--teal);font-weight:600;white-space:nowrap}
+
+.task{border-left:4px solid var(--teal)}
+.task.high{border-left-color:var(--wine)}
+.task .head{padding:16px 18px 10px}
+.task .subject{font-weight:600;font-size:17px;line-height:1.35}
+.task .meta{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--ink-2);margin-top:8px}
+.task .meta span b{font-weight:600;color:var(--ink)}
+.task .body{border-top:1px solid #EEF1ED;padding:4px 18px 14px;font-size:14.5px;line-height:1.55;color:var(--ink)}
+.task .body p{margin:10px 0}
+.task .body hr{border:0;border-top:1px dashed var(--rule);margin:16px 0}
+.task .body p:last-child{font-size:11px}
+.noSend{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;color:var(--ink-2);padding:10px 18px 14px;border-top:1px solid #EEF1ED}
+
+/* recovery timeline */
+.timeline{list-style:none;margin:0;padding:8px 0}
+.timeline li{display:grid;grid-template-columns:62px 14px 1fr;gap:10px;padding:7px 18px 7px 12px;font-size:14.5px;align-items:start}
+.timeline .t{font-variant-numeric:tabular-nums;color:var(--ink-3);text-align:right;font-size:13px;padding-top:1px}
+.timeline .dot{width:10px;height:10px;border-radius:50%;background:var(--teal);margin-top:6px}
+.timeline .bad .dot{background:var(--wine)}
+.timeline .odd .dot{background:#C9A92B}
+.timeline .mark .dot{background:var(--ink);border-radius:2px}
+.timeline .note{display:block;font-size:13px;color:var(--ink-2)}
+.timeline .bad .what{color:var(--wine)}
+.timeline .attempt{grid-column:1/-1;padding:10px 18px 2px 12px;font-size:12.5px;font-weight:600;color:var(--ink-3);border-top:1px solid #EEF1ED;margin-top:4px}
+.timeline li:first-child.attempt{border-top:0;margin-top:0}
+.timeline li.attempt{display:block}
+.end dl{display:grid;grid-template-columns:1fr auto;margin:0;padding:6px 18px}
+.end dt,.end dd{padding:8px 0;border-top:1px solid #EEF1ED;margin:0;font-size:15px}
+.end dt:first-of-type,.end dd:first-of-type{border-top:0}
+.end dd{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.alertText{margin:0 18px 14px;padding:10px 12px;background:#F7F3F4;border-radius:4px;font-size:13.5px;color:var(--ink-2)}
+
+.checks{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:4px 24px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));font-size:14px;color:var(--ink-2)}
+.checks li{display:flex;gap:8px;align-items:flex-start}
+.checks svg{flex:none;margin-top:3px}
+.checksHead{margin:22px 0 0;font-size:13px;font-weight:600;color:var(--ink-2)}
+
+/* proof */
+.proof{padding:72px 0 24px}
+h2{font:500 clamp(26px,3.2vw,36px)/1.15 var(--serif);margin:0 0 10px;letter-spacing:-.01em}
+.proof .intro2{color:var(--ink-2);max-width:70ch;margin:0 0 30px;font-size:17px}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:34px 56px}
+@media (max-width:820px){.facts{grid-template-columns:1fr;gap:26px}}
+.facts h3{font:600 17px/1.3 var(--sans);margin:0 0 6px}
+.facts p,.facts li{color:var(--ink-2);font-size:15.5px;margin:0 0 8px}
+.facts ul{margin:0;padding-left:18px}
+.facts code{font-size:13.5px;background:#E9EEE8;padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+.runs{margin:48px 0 0;border-top:2px solid var(--ink)}
+.runs table{width:100%;border-collapse:collapse;font-size:15px}
+.runs th{text-align:left;font-weight:600;font-size:13px;color:var(--ink-3);padding:10px 12px 8px 0;border-bottom:1px solid var(--rule)}
+.runs td{padding:10px 12px 10px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.runs td:last-child{white-space:nowrap;color:var(--teal);font-weight:600}
+.runs .what{color:var(--ink-2)}
+@media (max-width:640px){.runs .what{display:none}}
+
+.files{padding:56px 0 64px}
+.files ul{list-style:none;padding:0;margin:16px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0 40px}
+.files li{border-top:1px solid var(--rule);padding:12px 0}
+.files a{font-weight:600;text-decoration:none}
+.files a:hover{text-decoration:underline}
+.files span{display:block;font-size:14px;color:var(--ink-2)}
+.sign{margin:48px 0 0;padding-top:20px;border-top:1px solid var(--rule);font-size:14.5px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:640px){.fields .row{grid-template-columns:1fr;gap:2px;padding:9px 14px}.kept td{padding-right:6px}.timeline li{grid-template-columns:52px 12px 1fr;padding-right:10px}.end dt,.end dd{font-size:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span>Prepared for Expedient Medicolegal Services</span>
+    <a class="by" href="https://theaipipe.com" rel="noopener"><img src="favicon.svg" alt="">The AI Pipe</a>
+  </div>
+
+  <section class="intro">
+    <h1>A physician inquiry, ready for your recruiting team in HubSpot.</h1>
+    <p class="lead">A reference n8n workflow, run on invented inquiries shaped like the public Join Expedient form. It reads the message, keeps to what the physician actually wrote, and leaves a review task with a proposed reply on the contact. Someone on your team decides what to say and sends it.</p>
+    <p class="recorded" id="recorded"></p>
+  </section>
+
+  <section class="desk" aria-label="Recorded test runs">
+    <div class="views" role="tablist" id="views"></div>
+    <div class="cases" id="cases" role="group" aria-label="Recorded runs in this view"></div>
+    <p class="caseNote" id="caseNote"></p>
+    <div class="surface" id="surface"></div>
+    <p class="checksHead" id="checksHead"></p>
+    <ul class="checks" id="checks"></ul>
+  </section>
+
+  <section class="proof">
+    <h2>For whoever looks after HubSpot and n8n</h2>
+    <p class="intro2">The workflow is a reference, not something to switch on as is. It was tested on n8n <span data-n8n></span> in Docker against a HubSpot API simulator; no HubSpot account was used. Your properties, permissions, trigger and existing workflows have to be mapped before activation.</p>
+    <div class="facts">
+      <div>
+        <h3>One way in</h3>
+        <p>Every two minutes, a poller asks HubSpot's contact search for contacts whose <code>recent_conversion_date</code> is newer than its checkpoint, minus a ten-minute overlap. A returning physician who submits again counts as a new inquiry, because the submission time changes. The workflow's own writes never touch that property, so it cannot trigger itself.</p>
+        <p>It needs a private app token, not HubSpot's "Send a webhook" workflow action, and it registers no HubSpot Trigger node, so it does not compete with a trigger you may already run in n8n.</p>
+      </div>
+      <div>
+        <h3>What the model sees</h3>
+        <p>Two fields, from an allowlist in the Configuration node: credentials and message. Name, email, phone, owner, notes, history and attachments stay in HubSpot. One provider was tested, OpenAI's <code data-model></code>, with no fallback to another. A message too short to read never reaches the model.</p>
+        <p>The model proposes; plain code checks. A suggested value whose quote cannot be found word for word in what the physician wrote is dropped and flagged. Routing to review is a rule, not a model judgment.</p>
+      </div>
+      <div>
+        <h3>What it writes, and what it never writes</h3>
+        <p>Suggestions go to their own group of contact properties (<code>ai_inquiry_*</code>), plus one task per open inquiry, assigned and due the next business day at 10:00 Pacific. It never writes lifecycle stage, owner or a staff-verified value; when a message contradicts the verified record, the task says so and goes to high priority. Nothing is emailed.</p>
+      </div>
+      <div>
+        <h3>When something fails</h3>
+        <p>A recovery ledger in the n8n Postgres records, per submission, which effects already happened. A retry finishes the missing step instead of replaying everything: the model is not asked twice, the contact is not rewritten, and a task that may already exist is looked up by its reference before anything is created. After three attempts it stops and sends an alert that carries the submission reference and the failing step, never the message.</p>
+      </div>
+      <div>
+        <h3>Before it runs on your portal</h3>
+        <ul>
+          <li>Map your property names in the Configuration node; the README lists the eight to create.</li>
+          <li>Check which forms set <code>recent_conversion_date</code> on physician contacts, and set <code>JOIN_FORM_NAME</code> so only the join form counts.</li>
+          <li>Choose the owner who receives the tasks and the channel for alerts.</li>
+          <li>Run it against a sandbox or test portal first.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Known limits</h3>
+        <ul>
+          <li>HubSpot keeps one value of the message property. Two submissions from the same physician inside one polling cycle leave only the latest text to read.</li>
+          <li>Not tested here: a real HubSpot portal, another model provider, a restore into a clean instance, a production VPS.</li>
+          <li>Model readings vary slightly from run to run; the checks above held on this run.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="runs">
+      <table>
+        <thead><tr><th>Recorded run</th><th class="what">What it shows</th><th>Checks</th></tr></thead>
+        <tbody id="runs"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="files">
+    <h2>Files</h2>
+    <ul>
+      <li><a href="files/process-physician-inquiry.json" download>process-physician-inquiry.json</a><span>The n8n workflow that handles one submission.</span></li>
+      <li><a href="files/poll-physician-inquiries.json" download>poll-physician-inquiries.json</a><span>The poller: the single entry point.</span></li>
+      <li><a href="files/README.md" download>README.md</a><span>Setup, configuration, what goes to the model, limits.</span></li>
+      <li><a href="files/hubspot-properties.json" download>hubspot-properties.json</a><span>The contact properties the workflow expects.</span></li>
+      <li><a href="files/recovery-ledger.sql" download>recovery-ledger.sql</a><span>The ledger tables, in the Postgres n8n already uses.</span></li>
+      <li><a href="files/model-instructions.txt" download>model-instructions.txt</a><span>The full instructions sent to the model.</span></li>
+      <li><a href="files/recorded-test-runs.json" download>recorded-test-runs.json</a><span>Every check from the run shown on this page.</span></li>
+    </ul>
+    <div class="sign">
+      <span>Frederic de Choulot, The AI Pipe</span>
+      <span>All physicians, emails and phone numbers on this page are invented. No patient or client data was used.</span>
+    </div>
+  </section>
+</div>
+
+<script>
+const DATA = {"ranAt":"2026-10-01T18:48:51.466Z","n8n":"2.42.2","model":"gpt-5.4-mini-2026-03-17","allPassed":true,"totalChecks":49,"passedChecks":49,"scenarios":{"ordinary":{"id":"ordinary","checks":[{"label":"exactly one review task","ok":true},{"label":"task associated to the contact","ok":true},{"label":"task assigned to the recruiting owner","ok":true},{"label":"task has a due date","ok":true,"detail":"2026-10-02T17:00:00.000Z"},{"label":"proposed reply is in the task body","ok":true},{"label":"one model call, two fields sent","ok":true,"detail":[["credentials","message"]]},{"label":"no email sent (no email or communication endpoint called)","ok":true}],"form":{"name":"Priya Raman","credentials":"MD","email":"p.raman@example.test","phone":"(555) 010-2231","message":"I'm a psychiatrist licensed in California and interested in becoming a QME. I could speak on Thursday afternoons. What does the preparation involve?"},"reading":{"values":{"specialty":"psychiatrist","license_states":"CA","certification_statement":"not_stated","intent":"explore_qme_certification","call_availability":"Thursday afternoons","review_status":"needs_clarification","flags":"none"},"evidence":{"specialty":"I'm a psychiatrist","license_states":"licensed in California","intent":"interested in becoming a QME","call_availability":"I could speak on Thursday afternoons"},"questions":["What does the preparation involve?"],"protected":null},"task":{"subject":"Physician inquiry: Priya Raman, MD (review and reply)","body":"\u003cp>\u003cb>Needs clarification\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>I'm a psychiatrist licensed in California and interested in becoming a QME. I could speak on Thursday afternoons. What does the preparation involve?\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: psychiatrist \u003cspan style=\"color:#666\">(\"I'm a psychiatrist\")\u003c/span>\u003cbr>Licensed in: CA \u003cspan style=\"color:#666\">(\"licensed in California\")\u003c/span>\u003cbr>Certification: not stated\u003cbr>Looking for: exploring QME certification \u003cspan style=\"color:#666\">(\"interested in becoming a QME\")\u003c/span>\u003cbr>Available for a first call: Thursday afternoons \u003cspan style=\"color:#666\">(\"I could speak on Thursday afternoons\")\u003c/span> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>To clarify\u003c/b>\u003cbr>Whether they are already a certified QME or just exploring the process\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Raman,\u003cbr>\u003cbr>Thank you for reaching out and for your interest in becoming a QME. We’d be happy to share an overview of the preparation process and answer any questions you have.\u003cbr>\u003cbr>You mentioned that Thursday afternoons work for you. Please share the best phone number to reach you, and our team will propose a time for a first conversation.\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880350584\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"MEDIUM","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.153,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.187,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":2.824,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":2.882,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":2.92,"what":"Created the review task","status":201,"fault":null,"dropped":false}],"model":[{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2444,"tokens":1037}],"ledger":[{"submission_key":"1000:1790880350584","status":"done","attempts":1,"suggestions_written":true,"task_id":"1001","task_action":"created","last_step":"done","last_error":null,"alerted":false}],"executions":[{"wf":"poller","status":"success"},{"wf":"process","status":"success"}],"patches":1},"established":{"id":"established","checks":[{"label":"exactly one review task","ok":true},{"label":"intent read as an established QME","ok":true,"detail":"established_qme_joining"}],"form":{"name":"Daniel Okoye","credentials":"MD, orthopedic surgery","email":"dokoye@example.test","phone":"(555) 010-4410","message":"I've been a QME since 2019 and I'm licensed in California. I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations. Email is the best way to reach me."},"reading":{"values":{"specialty":"orthopedic surgery","license_states":"CA","certification_statement":"says_certified_qme","intent":"established_qme_joining","call_availability":"not stated","review_status":"ready_for_review","flags":"none"},"evidence":{"specialty":"MD, orthopedic surgery","license_states":"I'm licensed in California","certification_statement":"I've been a QME since 2019","intent":"I'm looking at groups that handle scheduling and report logistics"},"questions":[],"protected":null},"task":{"subject":"Physician inquiry: Daniel Okoye, MD, orthopedic surgery (review and reply)","body":"\u003cp>\u003cb>Ready for review\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>I've been a QME since 2019 and I'm licensed in California. I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations. Email is the best way to reach me.\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: orthopedic surgery \u003cspan style=\"color:#666\">(\"MD, orthopedic surgery\")\u003c/span>\u003cbr>Licensed in: CA \u003cspan style=\"color:#666\">(\"I'm licensed in California\")\u003c/span>\u003cbr>Certification: says they are a certified QME \u003cspan style=\"color:#666\">(\"I've been a QME since 2019\")\u003c/span>\u003cbr>Looking for: established QME looking at the group \u003cspan style=\"color:#666\">(\"I'm looking at groups that handle scheduling and report logistics\")\u003c/span>\u003cbr>Available for a first call: \u003ci>not stated\u003c/i> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Okoye,\u003cbr>\u003cbr>Thank you for reaching out. It sounds like you are already an established QME and are looking for support with scheduling and report logistics. We would be glad to set up an initial conversation to learn more about what you are looking for and to share how our team typically supports physicians.\u003cbr>\u003cbr>You mentioned that email is the best way to reach you, so please send over any additional details that would be helpful for the conversation, and we will propose a time for a first call.\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880357820\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"MEDIUM","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.069,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.084,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":2.299,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":2.315,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":2.336,"what":"Created the review task","status":201,"fault":null,"dropped":false}],"model":[{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2185,"tokens":1062}],"ledger":[{"submission_key":"1000:1790880357820","status":"done","attempts":1,"suggestions_written":true,"task_id":"1001","task_action":"created","last_step":"done","last_error":null,"alerted":false}],"executions":[{"wf":"poller","status":"success"},{"wf":"process","status":"success"}],"patches":1},"sparse":{"id":"sparse","checks":[{"label":"no model call for a one-word message","ok":true},{"label":"review status: needs information","ok":true},{"label":"everything else left as not stated","ok":true},{"label":"still one review task, with a reply asking for the basics","ok":true}],"form":{"name":"Marcus Bell","credentials":"DO","email":"mbell.do@example.test","phone":"(555) 010-7781","message":"Interested."},"reading":{"values":{"specialty":"not stated","license_states":"not stated","certification_statement":"not_stated","intent":"unclear","call_availability":"not stated","review_status":"needs_information","flags":"no_model_call:message_too_short"},"evidence":{},"questions":[],"protected":null},"task":{"subject":"Physician inquiry: Marcus Bell, DO (review and reply)","body":"\u003cp>\u003cb>Needs information\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>Interested.\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: \u003ci>not stated\u003c/i>\u003cbr>Licensed in: \u003ci>not stated\u003c/i>\u003cbr>Certification: not stated\u003cbr>Looking for: unclear\u003cbr>Available for a first call: \u003ci>not stated\u003c/i> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>To clarify\u003c/b>\u003cbr>The message is empty or too short to interpret.\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Bell,\u003cbr>\u003cbr>Thank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, where you are licensed, and whether you are already a QME or exploring certification?\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880363523\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"MEDIUM","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.06,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.087,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":0.107,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":0.126,"what":"Created the review task","status":201,"fault":null,"dropped":false}],"model":[],"ledger":[{"submission_key":"1000:1790880363523","status":"done","attempts":1,"suggestions_written":true,"task_id":"1001","task_action":"created","last_step":"done","last_error":null,"alerted":false}],"executions":[{"wf":"poller","status":"success"},{"wf":"process","status":"success"}],"patches":1},"outOfState":{"id":"outOfState","checks":[{"label":"not rejected: a review task exists","ok":true},{"label":"routed to clarification","ok":true,"detail":"needs_clarification"},{"label":"flagged: licensed states without California","ok":true,"detail":"clarify:licensed_states_without_california"}],"form":{"name":"Helen Park","credentials":"MD (PM&R)","email":"hpark.pmr@example.test","phone":"(555) 010-3392","message":"Board certified in physical medicine and rehabilitation, licensed in Arizona and Nevada. Is QME work possible if I'm not licensed in California yet? Any weekday after 5pm works for a call."},"reading":{"values":{"specialty":"Physical Medicine and Rehabilitation","license_states":"AZ, NV","certification_statement":"not_stated","intent":"explore_qme_certification","call_availability":"Any weekday after 5pm","review_status":"needs_clarification","flags":"clarify:licensed_states_without_california"},"evidence":{"specialty":"Board certified in physical medicine and rehabilitation","license_states":"licensed in Arizona and Nevada","intent":"Is QME work possible if I'm not licensed in California yet?","call_availability":"Any weekday after 5pm works for a call"},"questions":["Is QME work possible if I'm not licensed in California yet?"],"protected":null},"task":{"subject":"Physician inquiry: Helen Park, MD (PM&R) (review and reply)","body":"\u003cp>\u003cb>Needs clarification\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>Board certified in physical medicine and rehabilitation, licensed in Arizona and Nevada. Is QME work possible if I'm not licensed in California yet? Any weekday after 5pm works for a call.\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: Physical Medicine and Rehabilitation \u003cspan style=\"color:#666\">(\"Board certified in physical medicine and rehabilitation\")\u003c/span>\u003cbr>Licensed in: AZ, NV \u003cspan style=\"color:#666\">(\"licensed in Arizona and Nevada\")\u003c/span>\u003cbr>Certification: not stated\u003cbr>Looking for: exploring QME certification \u003cspan style=\"color:#666\">(\"Is QME work possible if I'm not licensed in California yet?\")\u003c/span>\u003cbr>Available for a first call: Any weekday after 5pm \u003cspan style=\"color:#666\">(\"Any weekday after 5pm works for a call.\")\u003c/span> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>To clarify\u003c/b>\u003cbr>Whether they already hold a California medical license\u003cbr>Whether they are currently QME certified or in the process of becoming certified\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Park,\u003cbr>\u003cbr>Thank you for reaching out. We’d be glad to speak with you about QME work and the general steps involved. In the meantime, could you confirm whether you currently hold a California medical license and whether you have any prior QME experience or certification status?\u003cbr>\u003cbr>You mentioned that any weekday after 5pm works for a call, and our team will propose a time from there.\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880368063\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"MEDIUM","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.055,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.085,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":2.961,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":2.975,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":2.997,"what":"Created the review task","status":201,"fault":null,"dropped":false}],"model":[{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2844,"tokens":1190}],"ledger":[{"submission_key":"1000:1790880368063","status":"done","attempts":1,"suggestions_written":true,"task_id":"1001","task_action":"created","last_step":"done","last_error":null,"alerted":false}],"executions":[{"wf":"poller","status":"success"},{"wf":"process","status":"success"}],"patches":1},"conflict":{"id":"conflict","checks":[{"label":"verified QME status unchanged","ok":true},{"label":"contact owner unchanged","ok":true},{"label":"lifecycle stage unchanged","ok":true},{"label":"conflict flagged for review","ok":true,"detail":"conflict_with_verified_record"},{"label":"task raised to high priority","ok":true}],"form":{"name":"Samuel Ortiz","credentials":"MD","email":"sortiz@example.test","phone":"(555) 010-5527","message":"Following up from last year. My QME certification lapsed and I'm retaking the exam this spring. Can I still work with your group in the meantime?"},"reading":{"values":{"specialty":"not stated","license_states":"not stated","certification_statement":"says_in_progress","intent":"established_qme_joining","call_availability":"not stated","review_status":"conflict_with_verified_record","flags":"conflict:verified_qme_status=certified_qme,message_says=says_in_progress"},"evidence":{"certification_statement":"My QME certification lapsed and I'm retaking the exam this spring","intent":"Can I still work with your group in the meantime?"},"questions":["Can I still work with your group in the meantime?"],"protected":[{"k":"expedient_qme_status_verified","before":"certified_qme","after":"certified_qme"},{"k":"hubspot_owner_id","before":"900002","after":"900002"},{"k":"lifecyclestage","before":"opportunity","after":"opportunity"}]},"task":{"subject":"Physician inquiry: Samuel Ortiz, MD (review and reply)","body":"\u003cp>\u003cb>Conflicts with the verified record\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>Following up from last year. My QME certification lapsed and I'm retaking the exam this spring. Can I still work with your group in the meantime?\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: \u003ci>not stated\u003c/i>\u003cbr>Licensed in: \u003ci>not stated\u003c/i>\u003cbr>Certification: says certification is in progress \u003cspan style=\"color:#666\">(\"My QME certification lapsed and I'm retaking the exam this spring.\")\u003c/span>\u003cbr>Looking for: established QME looking at the group \u003cspan style=\"color:#666\">(\"Can I still work with your group in the meantime?\")\u003c/span>\u003cbr>Available for a first call: \u003ci>not stated\u003c/i> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>Verified record kept as is\u003c/b>: QME status certified QME. The new message does not match it; please check with the physician.\u003c/p>\u003cp>\u003cb>To clarify\u003c/b>\u003cbr>Confirm current California medical license status and any other state licenses if relevant.\u003cbr>Clarify whether they are seeking help while their QME certification is lapsed and they are retaking the exam.\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Ortiz,\u003cbr>\u003cbr>Thank you for reaching out and for following up. We’d be glad to learn more about your situation and discuss what working with our group could look like while you are retaking the QME exam.\u003cbr>\u003cbr>If you’d like, we can set up a first conversation to talk through your current status and next steps. Please share a few times that work well for you, and our team will propose a time.\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:2001:1790880374877\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"HIGH","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.068,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.093,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":2.799,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":2.877,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":2.896,"what":"Created the review task","status":201,"fault":null,"dropped":false}],"model":[{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2610,"tokens":1132}],"ledger":[{"submission_key":"2001:1790880374877","status":"done","attempts":1,"suggestions_written":true,"task_id":"1000","task_action":"created","last_step":"done","last_error":null,"alerted":false}],"executions":[{"wf":"poller","status":"success"},{"wf":"process","status":"success"}],"patches":1},"unclear":{"id":"unclear","checks":[{"label":"routed to clarification","ok":true,"detail":"needs_clarification"},{"label":"no certification status invented","ok":true,"detail":"not_stated"}],"form":{"name":"Grace Liu","credentials":"MD","email":"gliu@example.test","phone":"(555) 010-8864","message":"A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer."},"reading":{"values":{"specialty":"pain management","license_states":"not stated","certification_statement":"not_stated","intent":"other","call_availability":"not stated","review_status":"needs_clarification","flags":"none"},"evidence":{"specialty":"I do a lot of pain management","intent":"wanted to see what you offer"},"questions":[],"protected":null},"task":{"subject":"Physician inquiry: Grace Liu, MD (review and reply)","body":"\u003cp>\u003cb>Needs clarification\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer.\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: pain management \u003cspan style=\"color:#666\">(\"I do a lot of pain management\")\u003c/span>\u003cbr>Licensed in: \u003ci>not stated\u003c/i>\u003cbr>Certification: not stated\u003cbr>Looking for: other request \u003cspan style=\"color:#666\">(\"wanted to see what you offer\")\u003c/span>\u003cbr>Available for a first call: \u003ci>not stated\u003c/i> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>To clarify\u003c/b>\u003cbr>California medical license not stated\u003cbr>QME certification status not stated\u003cbr>They did not specify what information they want about the group\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Liu,\u003cbr>\u003cbr>Thank you for reaching out and for your interest in our group. We’d be glad to share more about what we offer and discuss whether it may be a fit for your background in pain management.\u003cbr>\u003cbr>If you’re open to it, please send a few times that work well for a first conversation, and we’ll propose a time.\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880381090\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"MEDIUM","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.065,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.086,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":2.188,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":2.201,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":2.22,"what":"Created the review task","status":201,"fault":null,"dropped":false}],"model":[{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2074,"tokens":995}],"ledger":[{"submission_key":"1000:1790880381090","status":"done","attempts":1,"suggestions_written":true,"task_id":"1001","task_action":"created","last_step":"done","last_error":null,"alerted":false}],"executions":[{"wf":"poller","status":"success"},{"wf":"process","status":"success"}],"patches":1},"doubleDelivery":{"id":"doubleDelivery","checks":[{"label":"two polls ran at the same time","ok":true,"detail":3},{"label":"the submission was processed once","ok":true,"detail":1},{"label":"one contact update","ok":true},{"label":"one review task","ok":true},{"label":"one model call","ok":true}],"form":{"name":"Daniel Okoye","credentials":"MD, orthopedic surgery","email":"dokoye@example.test","phone":"(555) 010-4410","message":"I've been a QME since 2019 and I'm licensed in California. I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations. Email is the best way to reach me."},"reading":{"values":{"specialty":"orthopedic surgery","license_states":"CA","certification_statement":"says_certified_qme","intent":"established_qme_joining","call_availability":"not stated","review_status":"ready_for_review","flags":"none"},"evidence":{"specialty":"MD, orthopedic surgery","license_states":"I'm licensed in California","certification_statement":"I've been a QME since 2019","intent":"I'm looking at groups that handle scheduling and report logistics"},"questions":[],"protected":null},"task":{"subject":"Physician inquiry: Daniel Okoye, MD, orthopedic surgery (review and reply)","body":"\u003cp>\u003cb>Ready for review\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>I've been a QME since 2019 and I'm licensed in California. I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations. Email is the best way to reach me.\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: orthopedic surgery \u003cspan style=\"color:#666\">(\"MD, orthopedic surgery\")\u003c/span>\u003cbr>Licensed in: CA \u003cspan style=\"color:#666\">(\"I'm licensed in California.\")\u003c/span>\u003cbr>Certification: says they are a certified QME \u003cspan style=\"color:#666\">(\"I've been a QME since 2019\")\u003c/span>\u003cbr>Looking for: established QME looking at the group \u003cspan style=\"color:#666\">(\"I'm looking at groups that handle scheduling and report logistics\")\u003c/span>\u003cbr>Available for a first call: \u003ci>not stated\u003c/i> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Okoye,\u003cbr>\u003cbr>Thank you for reaching out and for sharing a bit about your background. It sounds like you are an established QME and are exploring support with scheduling and report logistics.\u003cbr>\u003cbr>We would be glad to set up a first conversation to learn more about what you are looking for and to share how our team typically supports physicians. Since you noted that email is the best way to reach you, please let us know a few times that would work for a brief call, and we will help coordinate from there.\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880386791\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"MEDIUM","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.076,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.103,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.13,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":2.472,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":2.486,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":2.508,"what":"Created the review task","status":201,"fault":null,"dropped":false},{"t":5.535,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false}],"model":[{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2311,"tokens":1053}],"ledger":[{"submission_key":"1000:1790880386791","status":"done","attempts":1,"suggestions_written":true,"task_id":"1001","task_action":"created","last_step":"done","last_error":null,"alerted":false}],"executions":[{"wf":"poller","status":"success"},{"wf":"poller","status":"success"},{"wf":"process","status":"success"},{"wf":"poller","status":"success"}],"patches":1},"samePhysicianAgain":{"id":"samePhysicianAgain","checks":[{"label":"both inquiries recorded and done","ok":true},{"label":"the second inquiry was interpreted, not skipped","ok":true},{"label":"still one open review task for this physician","ok":true},{"label":"second inquiry added to that task","ok":true}],"form":{"name":"Priya Raman","credentials":"MD","email":"p.raman@example.test","phone":"(555) 010-2231","message":"I'm a psychiatrist licensed in California and interested in becoming a QME. I could speak on Thursday afternoons. What does the preparation involve?"},"reading":{"values":{"specialty":"not stated","license_states":"not stated","certification_statement":"says_in_progress","intent":"explore_qme_certification","call_availability":"Mornings work better for a call now.","review_status":"needs_clarification","flags":"none"},"evidence":{"intent":"interested in becoming a QME","call_availability":"I could speak on Thursday afternoons"},"questions":["What does the preparation involve?"],"protected":null},"task":{"subject":"Physician inquiry: Priya Raman, MD (review and reply)","body":"\u003cp>\u003cb>Ready for review\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>I'm a psychiatrist licensed in California and interested in becoming a QME. I could speak on Thursday afternoons. What does the preparation involve?\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: psychiatrist \u003cspan style=\"color:#666\">(\"I'm a psychiatrist\")\u003c/span>\u003cbr>Licensed in: CA \u003cspan style=\"color:#666\">(\"licensed in California\")\u003c/span>\u003cbr>Certification: not stated\u003cbr>Looking for: exploring QME certification \u003cspan style=\"color:#666\">(\"interested in becoming a QME\")\u003c/span>\u003cbr>Available for a first call: Thursday afternoons \u003cspan style=\"color:#666\">(\"I could speak on Thursday afternoons\")\u003c/span> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Raman,\u003cbr>\u003cbr>Thank you for reaching out. We’d be happy to share more about what the QME preparation process typically involves and answer any questions you have about getting started.\u003cbr>\u003cbr>We noted that you’re available on Thursday afternoons, and our team will propose a time for a first conversation.\u003cbr>\u003cbr>To help us prepare, please let us know if you are already QME certified or are exploring certification at this stage.\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790869596936\u003c/p>\u003chr>\u003cp>\u003cb>New inquiry from the same physician\u003c/b>, received 2026-10-01 18:46 UTC\u003c/p>\u003cp>\u003cb>Needs clarification\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>Quick update to my note from this morning: I finished the QME course and I'm registered for the exam in January. Mornings work better for a call now.\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: \u003ci>not stated\u003c/i>\u003cbr>Licensed in: \u003ci>not stated\u003c/i>\u003cbr>Certification: says certification is in progress \u003cspan style=\"color:#666\">(\"I finished the QME course and I'm registered for the exam in January.\")\u003c/span>\u003cbr>Looking for: exploring QME certification \u003cspan style=\"color:#666\">(\"I finished the QME course and I'm registered for the exam in January.\")\u003c/span>\u003cbr>Available for a first call: Mornings work better for a call now. \u003cspan style=\"color:#666\">(\"Mornings work better for a call now.\")\u003c/span> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>To clarify\u003c/b>\u003cbr>Specialty not stated\u003cbr>State licensure not stated\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Raman,\u003cbr>\u003cbr>Thank you for the update. It is helpful to hear that you have completed the QME course and are registered for the exam in January.\u003cbr>\u003cbr>We would be glad to set up an introductory call. You mentioned that mornings work better, so our team will propose a morning time that fits your schedule.\u003cbr>\u003cbr>For that first conversation, could you also share your specialty and the state(s) where you are licensed?\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880402316\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"MEDIUM","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.058,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.074,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":2.21,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":2.228,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":2.257,"what":"Created the review task","status":201,"fault":null,"dropped":false},{"t":5.409,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":5.458,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":5.476,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":7.853,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":7.867,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":7.898,"what":"Read those tasks","status":200,"fault":null,"dropped":false},{"t":7.922,"what":"Added the new inquiry to the open task","status":200,"fault":null,"dropped":false}],"model":[{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2104,"tokens":1015},{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2344,"tokens":1110}],"ledger":[{"submission_key":"1000:1790869596936","status":"done","attempts":1,"suggestions_written":true,"task_id":"1001","task_action":"created","last_step":"done","last_error":null,"alerted":false},{"submission_key":"1000:1790880402316","status":"done","attempts":1,"suggestions_written":true,"task_id":"1001","task_action":"appended","last_step":"done","last_error":null,"alerted":false}],"executions":[{"wf":"poller","status":"success"},{"wf":"process","status":"success"},{"wf":"poller","status":"success"},{"wf":"process","status":"success"}],"patches":2,"second":"Quick update to my note from this morning: I finished the QME course and I'm registered for the exam in January. Mornings work better for a call now."},"taskFailsAfterUpdate":{"id":"taskFailsAfterUpdate","checks":[{"label":"first task creation failed (502)","ok":true},{"label":"contact updated once, not again on retry","ok":true},{"label":"model called once, interpretation reused","ok":true},{"label":"one review task in the end","ok":true},{"label":"finished on attempt 2","ok":true}],"form":{"name":"Helen Park","credentials":"MD (PM&R)","email":"hpark.pmr@example.test","phone":"(555) 010-3392","message":"Board certified in physical medicine and rehabilitation, licensed in Arizona and Nevada. Is QME work possible if I'm not licensed in California yet? Any weekday after 5pm works for a call."},"reading":{"values":{"specialty":"physical medicine and rehabilitation","license_states":"AZ, NV","certification_statement":"not_stated","intent":"explore_qme_certification","call_availability":"Any weekday after 5pm","review_status":"needs_clarification","flags":"clarify:licensed_states_without_california"},"evidence":{"specialty":"Board certified in physical medicine and rehabilitation","license_states":"licensed in Arizona and Nevada","intent":"Is QME work possible if I'm not licensed in California yet?","call_availability":"Any weekday after 5pm works for a call"},"questions":["Is QME work possible if I'm not licensed in California yet?"],"protected":null},"task":{"subject":"Physician inquiry: Helen Park, MD (PM&R) (review and reply)","body":"\u003cp>\u003cb>Needs clarification\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>Board certified in physical medicine and rehabilitation, licensed in Arizona and Nevada. Is QME work possible if I'm not licensed in California yet? Any weekday after 5pm works for a call.\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: physical medicine and rehabilitation \u003cspan style=\"color:#666\">(\"Board certified in physical medicine and rehabilitation\")\u003c/span>\u003cbr>Licensed in: AZ, NV \u003cspan style=\"color:#666\">(\"licensed in Arizona and Nevada\")\u003c/span>\u003cbr>Certification: not stated\u003cbr>Looking for: exploring QME certification \u003cspan style=\"color:#666\">(\"Is QME work possible if I'm not licensed in California yet?\")\u003c/span>\u003cbr>Available for a first call: Any weekday after 5pm \u003cspan style=\"color:#666\">(\"Any weekday after 5pm works for a call.\")\u003c/span> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>To clarify\u003c/b>\u003cbr>Not licensed in California yet\u003cbr>Whether they are already QME certified or are exploring becoming a QME\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Park,\u003cbr>\u003cbr>Thank you for reaching out. We’d be happy to discuss QME work and the general path for physicians who are exploring it. We can also talk through how California licensure fits into that process.\u003cbr>\u003cbr>You mentioned that any weekday after 5pm works for a call, and we’ll have the team propose a time.\u003cbr>\u003cbr>To help prepare for the conversation, please let us know whether you currently hold a California medical license and whether you are already QME certified or are still exploring certification.\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880408502\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"MEDIUM","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.055,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.077,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":2.491,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":2.508,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":2.571,"what":"Created the review task","status":502,"fault":"error","dropped":false},{"t":5.497,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":5.55,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":5.574,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":5.597,"what":"Created the review task","status":201,"fault":null,"dropped":false}],"model":[{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2379,"tokens":1167}],"ledger":[{"submission_key":"1000:1790880408502","status":"done","attempts":2,"suggestions_written":true,"task_id":"1001","task_action":"created","last_step":"done","last_error":"Create review task: 502","alerted":false}],"executions":[{"wf":"poller","status":"success"},{"wf":"process","status":"error"},{"wf":"poller","status":"success"},{"wf":"process","status":"success"}],"patches":1},"responseLost":{"id":"responseLost","checks":[{"label":"the task was created but the answer never arrived","ok":true},{"label":"no second task created","ok":true},{"label":"found by its reference and reconciled","ok":true,"detail":"reconciled"}],"form":{"name":"Grace Liu","credentials":"MD","email":"gliu@example.test","phone":"(555) 010-8864","message":"A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer."},"reading":{"values":{"specialty":"pain management","license_states":"not stated","certification_statement":"not_stated","intent":"other","call_availability":"not stated","review_status":"needs_clarification","flags":"none"},"evidence":{"specialty":"“I do a lot of pain management”","intent":"“wanted to see what you offer”"},"questions":[],"protected":null},"task":{"subject":"Physician inquiry: Grace Liu, MD (review and reply)","body":"\u003cp>\u003cb>Needs clarification\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer.\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: pain management \u003cspan style=\"color:#666\">(\"I do a lot of pain management\")\u003c/span>\u003cbr>Licensed in: \u003ci>not stated\u003c/i>\u003cbr>Certification: not stated\u003cbr>Looking for: other request \u003cspan style=\"color:#666\">(\"wanted to see what you offer\")\u003c/span>\u003cbr>Available for a first call: \u003ci>not stated\u003c/i> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>To clarify\u003c/b>\u003cbr>Whether they are interested in QME work or only general information\u003cbr>Which state(s) they are licensed in\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Liu,\u003cbr>\u003cbr>Thank you for reaching out and for the introduction from your colleague. We’d be glad to share more about what we offer and how we support physicians who are interested in QME work.\u003cbr>\u003cbr>If you’d like, we can set up a first conversation to learn more about your background and what you’re hoping to explore. If you can share your state(s) of licensure and whether you’re currently a QME or looking to get started, that would help us prepare for the call.\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880414767\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"MEDIUM","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.084,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.11,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":2.498,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":2.515,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":2.539,"what":"Created the review task","status":201,"fault":"drop_after_commit","dropped":true},{"t":8.619,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":8.678,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":8.706,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":8.72,"what":"Read those tasks","status":200,"fault":null,"dropped":false}],"model":[{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2354,"tokens":1042}],"ledger":[{"submission_key":"1000:1790880414767","status":"done","attempts":2,"suggestions_written":true,"task_id":"1001","task_action":"reconciled","last_step":"done","last_error":"Create review task: no response","alerted":false}],"executions":[{"wf":"poller","status":"success"},{"wf":"process","status":"error"},{"wf":"poller","status":"success"},{"wf":"process","status":"success"}],"patches":1},"restartMidway":{"id":"restartMidway","checks":[{"label":"n8n restarted while the task call was in flight","ok":true,"detail":"processing"},{"label":"the inquiry was not lost: picked up again after the lease expired","ok":true},{"label":"exactly one review task","ok":true},{"label":"model not called again","ok":true}],"form":{"name":"Daniel Okoye","credentials":"MD, orthopedic surgery","email":"dokoye@example.test","phone":"(555) 010-4410","message":"I've been a QME since 2019 and I'm licensed in California. I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations. Email is the best way to reach me."},"reading":{"values":{"specialty":"orthopedic surgery","license_states":"CA","certification_statement":"says_certified_qme","intent":"established_qme_joining","call_availability":"Email is the best way to reach me.","review_status":"ready_for_review","flags":"none"},"evidence":{"specialty":"MD, orthopedic surgery","license_states":"I'm licensed in California","certification_statement":"I've been a QME since 2019","intent":"I've been a QME since 2019","call_availability":"Email is the best way to reach me"},"questions":[],"protected":null},"task":{"subject":"Physician inquiry: Daniel Okoye, MD, orthopedic surgery (review and reply)","body":"\u003cp>\u003cb>Ready for review\u003c/b>. Nothing has been sent to the physician.\u003c/p>\u003cp>\u003cb>What they wrote\u003c/b>\u003cbr>I've been a QME since 2019 and I'm licensed in California. I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations. Email is the best way to reach me.\u003c/p>\u003cp>\u003cb>Suggested reading, from their own words\u003c/b>\u003cbr>Specialty: orthopedic surgery \u003cspan style=\"color:#666\">(\"MD, orthopedic surgery\")\u003c/span>\u003cbr>Licensed in: CA \u003cspan style=\"color:#666\">(\"I'm licensed in California.\")\u003c/span>\u003cbr>Certification: says they are a certified QME \u003cspan style=\"color:#666\">(\"I've been a QME since 2019\")\u003c/span>\u003cbr>Looking for: established QME looking at the group \u003cspan style=\"color:#666\">(\"I've been a QME since 2019\")\u003c/span>\u003cbr>Available for a first call: Email is the best way to reach me. \u003cspan style=\"color:#666\">(\"Email is the best way to reach me.\")\u003c/span> (a call window, not evaluation capacity)\u003c/p>\u003cp>\u003cb>Proposed reply\u003c/b> (edit, then send it yourself)\u003cbr>Dear Dr. Okoye,\u003cbr>\u003cbr>Thank you for reaching out and for sharing that you are an orthopedic surgeon and have been a QME since 2019. It sounds like you are looking for support with scheduling and report logistics so you can focus on the evaluations.\u003cbr>\u003cbr>We’d be glad to have a first conversation about how our team works with QMEs. Since you mentioned email is the best way to reach you, please feel free to send any additional details you’d like us to know, and we can propose a time for a call from there.\u003cbr>\u003cbr>Best regards,\u003c/p>\u003cp style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880427983\u003c/p>","due":"2026-10-02T17:00:00.000Z","owner":"900001","priority":"MEDIUM","status":"NOT_STARTED","type":"TODO","associated":true},"tasks":1,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.092,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":0.116,"what":"Asked the model to read the message","status":200,"fault":null,"dropped":false},{"t":2.251,"what":"Wrote the suggestions to the contact","status":200,"fault":null,"dropped":false},{"t":2.267,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":2.297,"what":"Created the review task","status":201,"fault":"delay","dropped":false},{"t":2.446,"what":"n8n restarted (docker compose restart)","marker":"restart"},{"t":74.029,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":74.158,"what":"Read the contact","status":200,"fault":null,"dropped":false},{"t":74.217,"what":"Checked the contact's existing tasks","status":200,"fault":null,"dropped":false},{"t":74.243,"what":"Read those tasks","status":200,"fault":null,"dropped":false}],"model":[{"fields":["credentials","message"],"served":"gpt-5.4-mini-2026-03-17","ms":2095,"tokens":1030}],"ledger":[{"submission_key":"1000:1790880427983","status":"done","attempts":2,"suggestions_written":true,"task_id":"1001","task_action":"reconciled","last_step":"done","last_error":null,"alerted":false}],"executions":[{"wf":"poller","status":"crashed"},{"wf":"process","status":"crashed"},{"wf":"poller","status":"success"},{"wf":"process","status":"success"}],"patches":1},"givesUp":{"id":"givesUp","checks":[{"label":"stopped after 3 attempts","ok":true,"detail":{"submission_key":"1000:1790880506520","status":"failed","attempts":3,"suggestions_written":false,"task_id":null,"task_action":null,"last_step":"Read contact","last_error":"Read contact: 503","alerted":true}},{"label":"one failure alert sent","ok":true},{"label":"alert carries no message text, name or email","ok":true},{"label":"failed executions visible in n8n","ok":true},{"label":"nothing written to HubSpot","ok":true}],"form":{"name":"Priya Raman","credentials":"MD","email":"p.raman@example.test","phone":"(555) 010-2231","message":"I'm a psychiatrist licensed in California and interested in becoming a QME. I could speak on Thursday afternoons. What does the preparation involve?"},"reading":{"values":{"specialty":null,"license_states":null,"certification_statement":null,"intent":null,"call_availability":null,"review_status":null,"flags":null},"evidence":{},"questions":[],"protected":null},"task":null,"tasks":0,"calls":[{"t":0,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":0.072,"what":"Read the contact","status":503,"fault":"error","dropped":false,"times":3},{"t":9.058,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":9.121,"what":"Read the contact","status":503,"fault":"error","dropped":false,"times":3},{"t":18.155,"what":"Looked for new form submissions","status":200,"fault":null,"dropped":false},{"t":18.216,"what":"Read the contact","status":503,"fault":"error","dropped":false,"times":3},{"t":21.269,"what":"Failure alert sent","marker":"alert","alert":"Physician inquiry workflow: submission 1000:1790880506520 stopped after 3 attempts at step \"Read contact: 503\". Contact record 1000. Nothing was sent to the physician. Check the execution and the ledger."}],"model":[],"ledger":[{"submission_key":"1000:1790880506520","status":"failed","attempts":3,"suggestions_written":false,"task_id":null,"task_action":null,"last_step":"Read contact","last_error":"Read contact: 503","alerted":true}],"executions":[{"wf":"poller","status":"success"},{"wf":"process","status":"error"},{"wf":"poller","status":"success"},{"wf":"process","status":"error"},{"wf":"poller","status":"success"},{"wf":"process","status":"error"}],"patches":0}}};
+const S = DATA.scenarios;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const VIEWS = [
+  { id: "ordinary", label: "An ordinary inquiry", cases: [
+    ["ordinary", "Dr. Raman, exploring QME work"],
+    ["established", "Dr. Okoye, an established QME"]] },
+  { id: "missing", label: "Missing or conflicting information", cases: [
+    ["sparse", "Dr. Bell, one word"],
+    ["outOfState", "Dr. Park, licensed outside California"],
+    ["conflict", "Dr. Ortiz, contradicts the verified record"],
+    ["unclear", "Dr. Liu, unclear request"]] },
+  { id: "recovery", label: "Recovery after a failure", cases: [
+    ["restartMidway", "n8n restarts mid-run"],
+    ["responseLost", "Task created, answer lost"],
+    ["taskFailsAfterUpdate", "Task fails after the contact update"],
+    ["doubleDelivery", "Picked up twice at once"],
+    ["samePhysicianAgain", "Same physician writes again"],
+    ["givesUp", "HubSpot keeps failing"]] },
+];
+const NOTES = {
+  ordinary: "The kind of message a physician leaves on the join form: some facts, a question, a time to talk, and nothing about certification.",
+  established: "A physician who says they already work as a QME. No call window given, so none is suggested.",
+  sparse: "One word. No model call: plain code marks it as needing information and drafts a reply asking for the basics.",
+  outOfState: "Licensed in two other states. Not rejected: the task asks the coordinator to clarify.",
+  conflict: "This contact already exists, with a QME status your team verified, an owner and a lifecycle stage. The new message contradicts the verified status.",
+  unclear: "A message that does not say what the physician wants. Nothing is invented to fill the gaps.",
+  restartMidway: "HubSpot was made to take 15 seconds to answer the task request, and n8n was restarted while it waited. HubSpot finished creating the task anyway; n8n never heard back.",
+  responseLost: "HubSpot created the task, then the connection dropped before the answer reached n8n.",
+  taskFailsAfterUpdate: "The suggestions were written to the contact, then HubSpot answered 502 to the task request.",
+  doubleDelivery: "Two polls started at the same moment and both saw the same new submission.",
+  samePhysicianAgain: "Dr. Raman submitted the form in the morning, then again in the afternoon with new information.",
+  givesUp: "Every attempt to read the contact got a 503 from HubSpot.",
+};
+const L = {
+  says_certified_qme: "Says they are a certified QME", says_in_progress: "Says certification is in progress",
+  says_not_certified: "Says they are not certified", not_stated: "Not stated",
+  explore_qme_certification: "Exploring QME certification", established_qme_joining: "Established QME looking at the group",
+  other: "Other request", unclear: "Unclear",
+  ready_for_review: ["Ready for review", ""], needs_clarification: ["Needs clarification", "warn"],
+  conflict_with_verified_record: ["Conflicts with the verified record", "bad"], needs_information: ["Needs information", "warn"],
+  certified_qme: "Certified QME", opportunity: "Opportunity",
+};
+
+let view = "ordinary", cur = "ordinary";
+try { const h = decodeURIComponent(location.hash.slice(1)); if (S[h]) { cur = h; view = VIEWS.find((v) => v.cases.some((c) => c[0] === h)).id; } } catch (e) {}
+
+const ICON_OK = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#1D5C58" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICON_NO = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="#8C2B47" stroke-width="2" stroke-linecap="round"/></svg>';
+const ICON_FORM = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="1.5" width="11" height="13" rx="1.5" fill="none" stroke="currentColor"/><path d="M5 5h6M5 8h6M5 11h3.5" stroke="currentColor"/></svg>';
+const ICON_CRM = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5" fill="none" stroke="currentColor"/><path d="M3 14c.6-2.8 2.6-4.2 5-4.2s4.4 1.4 5 4.2" fill="none" stroke="currentColor"/></svg>';
+
+function renderViews() {
+  $("views").innerHTML = VIEWS.map((v) => `<button role="tab" aria-selected="${v.id === view}" data-v="${v.id}">${esc(v.label)}<small>${v.cases.length}</small></button>`).join("");
+  const v = VIEWS.find((x) => x.id === view);
+  $("cases").innerHTML = v.cases.map(([id, l]) => `<button aria-pressed="${id === cur}" data-c="${id}">${esc(l)}</button>`).join("");
+}
+
+// Wrap each quoted piece of evidence found in the text in <mark data-k="field ...">.
+function highlight(text, evidence) {
+  const keys = Array.from({ length: text.length }, () => []);
+  const low = text.toLowerCase().replace(/[‘’]/g, "'");
+  for (const [k, q] of Object.entries(evidence)) {
+    const i = low.indexOf(String(q).toLowerCase().replace(/[‘’]/g, "'"));
+    if (i < 0) continue;
+    for (let j = i; j < i + q.length; j++) keys[j].push(k);
+  }
+  let out = "", run = "", runKeys = null;
+  const flush = () => { if (!run) return; out += runKeys.length ? `<mark data-k="${runKeys.join(" ")}">${esc(run)}</mark>` : esc(run); run = ""; };
+  for (let i = 0; i < text.length; i++) {
+    const k = keys[i].join(" ");
+    if (runKeys === null || k !== runKeys.join(" ")) { flush(); runKeys = keys[i]; }
+    run += text[i];
+  }
+  flush();
+  return out;
+}
+
+function fmtDue(iso) {
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso)) + " PT";
+  } catch (e) { return iso; }
+}
+
+function taskCard(t, opts = {}) {
+  if (!t) return "";
+  return `<div class="sheet task ${t.priority === "HIGH" ? "high" : ""}">
+    <div class="head">
+      <div class="subject">${esc(t.subject)}</div>
+      <div class="meta">
+        <span>Due <b>${esc(fmtDue(t.due))}</b></span>
+        <span>Assigned to <b>recruiting owner</b> (test id ${esc(t.owner)})</span>
+        <span>Priority <b>${t.priority === "HIGH" ? "High" : "Medium"}</b></span>
+        <span>Status <b>Not started</b></span>
+        <span>Associated <b>${t.associated ? "with the contact" : "no"}</b></span>
+      </div>
+    </div>
+    ${opts.collapsed ? "" : `<div class="body">${t.body}</div>`}
+    <div class="noSend">${ICON_OK}<span>Task body as the workflow wrote it. The proposed reply stays here until someone edits it and sends it.</span></div>
+  </div>`;
+}
+
+function slip(s, evidence) {
+  const f = s.form;
+  const short = f.message.length < 30;
+  return `<div>
+    <p class="colHead">${ICON_FORM}What arrived through the join form</p>
+    <div class="slip">
+      <div class="band"></div>
+      <dl>
+        <dt>Name</dt><dd>${esc(f.name)}</dd>
+        <dt>Credentials</dt><dd>${highlight(f.credentials, evidence)}</dd>
+        <dt>Email</dt><dd>${esc(f.email)}</dd>
+        <dt>Phone</dt><dd>${esc(f.phone)}</dd>
+      </dl>
+      <p class="msgLabel">Message</p>
+      <p class="msg ${short ? "short" : ""}">${highlight(f.message, evidence)}</p>
+      <p class="slipFoot">${s.model.length ? `Only the credentials and the message went to the model (${esc(s.model[0].served)}, ${(s.model[0].ms / 1000).toFixed(1)} s).` : "Nothing went to the model: the message is too short to read."}</p>
+    </div>
+  </div>`;
+}
+
+function fieldsPanel(s) {
+  const r = s.reading, v = r.values, e = r.evidence;
+  const ns = (x) => (x == null || x === "not stated" || x === "not_stated") ? '<span class="ns">Not stated</span>' : esc(L[x] && typeof L[x] === "string" ? L[x] : x);
+  const row = (k, label, val) => `<div class="row" ${e[k] ? `data-k="${k}" tabindex="0"` : ""}><div class="k">${label}</div><div class="v">${val}${e[k] ? `<span class="ev">"${esc(e[k])}"</span>` : ""}</div></div>`;
+  const st = L[v.review_status] || [v.review_status, ""];
+  const kept = r.protected ? `<div class="kept"><b>Left exactly as it was</b><table>${r.protected.map((p) => `<tr><td>${esc({ expedient_qme_status_verified: "QME status (verified by staff)", hubspot_owner_id: "Contact owner", lifecyclestage: "Lifecycle stage" }[p.k])}</td><td>${esc(L[p.before] || p.before)}</td><td>${p.before === p.after ? "unchanged" : "changed"}</td></tr>`).join("")}</table></div>` : "";
+  return `<div>
+    <p class="colHead">${ICON_CRM}What your team finds on the contact in HubSpot</p>
+    <div class="sheet fields">
+      ${row("review_status", "Inquiry review status", `<span class="pill ${st[1]}">${esc(st[0])}</span>`)}
+      ${row("specialty", "Suggested specialty", ns(v.specialty))}
+      ${row("license_states", "Suggested license states", ns(v.license_states))}
+      ${row("certification_statement", "What they say about QME certification", ns(v.certification_statement))}
+      ${row("intent", "What they are looking for", ns(v.intent))}
+      ${row("call_availability", "Availability for a first call", ns(v.call_availability))}
+      ${v.flags && v.flags !== "none" ? row("flags", "Review flags", `<span class="flags">${esc(v.flags)}</span>`) : ""}
+      ${kept}
+    </div>
+  </div>`;
+}
+
+function timeline(s) {
+  let html = "", pending = null;
+  for (const c of s.calls) {
+    if (c.what === "Looked for new form submissions") {
+      // a poll heading is shown only if something followed it
+      pending = `<li class="attempt">Poll at +${c.t.toFixed(1)} s</li>`;
+      continue;
+    }
+    if (pending) { html += pending; pending = null; }
+    let cls = "", note = "";
+    if (c.marker === "restart") { cls = "mark"; note = "The execution in progress is cut off."; }
+    else if (c.marker === "alert") { cls = "bad"; note = ""; }
+    else if (c.fault === "delay") { cls = "odd"; note = "Still waiting for HubSpot when n8n restarted. HubSpot created the task 15 s later, with nobody listening."; }
+    else if (c.dropped) { cls = "odd"; note = "Created in HubSpot. The answer never reached n8n."; }
+    else if (c.status >= 400) { cls = "bad"; note = `HubSpot answered ${c.status}${c.times ? `, ${c.times} tries in a row` : ""}.`; }
+    html += `<li class="${cls}"><span class="t">+${c.t.toFixed(1)} s</span><span class="dot"></span><span><span class="what">${esc(c.what)}</span>${note ? `<span class="note">${esc(note)}</span>` : ""}</span></li>`;
+  }
+  return `<div>
+    <p class="colHead">${ICON_FORM}What happened, call by call, as recorded</p>
+    <div class="sheet"><ol class="timeline">${html}</ol></div>
+  </div>`;
+}
+
+function endState(s) {
+  const L0 = s.ledger[s.ledger.length - 1] || {};
+  const crashed = s.executions.filter((e) => e.status === "crashed").length;
+  const failedEx = s.executions.filter((e) => e.status === "error").length;
+  const alert = s.calls.find((c) => c.marker === "alert");
+  const rows = [
+    ["Review tasks in HubSpot", s.tasks],
+    ["Contact updates", s.patches],
+    ["Model calls", s.model.length],
+    ["Attempts", s.ledger.map((l) => l.attempts).join(" + ")],
+    ["Submissions recorded", s.ledger.length],
+    ["Executions in n8n", `${s.executions.length}${crashed ? `, ${crashed} crashed` : ""}${failedEx ? `, ${failedEx} failed` : ""}`],
+    ["Final state", L0.status === "done" ? (L0.task_action === "reconciled" ? "Done, existing task found" : L0.task_action === "appended" ? "Done, added to the open task" : "Done") : "Stopped, alert sent"],
+  ];
+  return `<div class="hs">
+    <div>
+      <p class="colHead">${ICON_CRM}Where it ended</p>
+      <div class="sheet end"><dl>${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      ${alert ? `<p class="alertText">Alert as sent: ${esc(alert.alert)}</p>` : ""}</div>
+    </div>
+    ${s.task ? taskCard(s.task, { collapsed: s.id !== "samePhysicianAgain" }) : ""}
+  </div>`;
+}
+
+function render() {
+  const s = S[cur];
+  renderViews();
+  $("caseNote").textContent = NOTES[cur] || "";
+  if (view === "recovery") {
+    $("surface").innerHTML = timeline(s) + endState(s);
+  } else {
+    $("surface").innerHTML = slip(s, s.reading.evidence) + `<div class="hs">${fieldsPanel(s)}${taskCard(s.task)}</div>`;
+  }
+  const ok = s.checks.filter((c) => c.ok).length;
+  $("checksHead").textContent = `Checks on this run: ${ok} of ${s.checks.length} held`;
+  $("checks").innerHTML = s.checks.map((c) => `<li>${c.ok ? ICON_OK : ICON_NO}<span>${esc(/^n8n/.test(c.label) ? c.label : c.label.charAt(0).toUpperCase() + c.label.slice(1))}</span></li>`).join("");
+  bindMarks();
+}
+
+function bindMarks() {
+  const set = (k, on) => {
+    document.querySelectorAll("mark[data-k]").forEach((m) => m.classList.toggle("on", on && m.dataset.k.split(" ").includes(k)));
+    document.querySelectorAll(".fields .row[data-k]").forEach((r) => r.classList.toggle("on", on && r.dataset.k === k));
+  };
+  document.querySelectorAll(".fields .row[data-k]").forEach((r) => {
+    r.addEventListener("mouseenter", () => set(r.dataset.k, true));
+    r.addEventListener("mouseleave", () => set(r.dataset.k, false));
+    r.addEventListener("focus", () => set(r.dataset.k, true));
+    r.addEventListener("blur", () => set(r.dataset.k, false));
+    r.addEventListener("click", () => set(r.dataset.k, true));
+  });
+  document.querySelectorAll("mark[data-k]").forEach((m) => {
+    m.addEventListener("mouseenter", () => set(m.dataset.k.split(" ")[0], true));
+    m.addEventListener("mouseleave", () => set(m.dataset.k.split(" ")[0], false));
+  });
+}
+
+$("views").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-v]"); if (!b) return;
+  view = b.dataset.v; cur = VIEWS.find((v) => v.id === view).cases[0][0];
+  history.replaceState(null, "", "#" + cur); render();
+});
+$("views").addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const i = VIEWS.findIndex((v) => v.id === view), n = (i + (e.key === "ArrowRight" ? 1 : VIEWS.length - 1)) % VIEWS.length;
+  view = VIEWS[n].id; cur = VIEWS[n].cases[0][0]; render();
+  document.querySelector(`#views button[data-v="${view}"]`).focus();
+});
+$("cases").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-c]"); if (!b) return;
+  cur = b.dataset.c; history.replaceState(null, "", "#" + cur); render();
+});
+
+const ran = new Date(DATA.ranAt);
+const day = ran.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", month: "long", day: "numeric", year: "numeric" });
+$("recorded").innerHTML = `<span><b>Recorded test runs</b>, ${esc(day)}</span><span>n8n ${esc(DATA.n8n)} in Docker</span><span>HubSpot API simulator, no HubSpot account</span><span>${DATA.passedChecks} of ${DATA.totalChecks} checks held</span>`;
+document.querySelectorAll("[data-n8n]").forEach((n) => (n.textContent = DATA.n8n));
+document.querySelectorAll("[data-model]").forEach((n) => (n.textContent = DATA.model));
+const WHAT = {
+  ordinary: "A real-looking inquiry becomes one assigned task with a proposed reply.",
+  established: "An established QME is read as such; no call window is invented.",
+  sparse: "A one-word message: no model call, a reply that asks for the basics.",
+  outOfState: "Licensed outside California: clarification, not rejection.",
+  conflict: "A message contradicts the verified record: nothing overwritten, conflict raised.",
+  unclear: "An unclear request: routed to clarification, nothing invented.",
+  doubleDelivery: "Two polls at once: processed once, one task.",
+  samePhysicianAgain: "A second inquiry is read and added to the open task.",
+  taskFailsAfterUpdate: "The retry creates the missing task without rewriting the contact.",
+  responseLost: "The retry finds the task already created instead of making a second.",
+  restartMidway: "A restart mid-run: picked up after the lease expires, no duplicate.",
+  givesUp: "Persistent failure: three attempts, then an alert without the message.",
+};
+const NAMES = Object.fromEntries(VIEWS.flatMap((v) => v.cases));
+$("runs").innerHTML = VIEWS.flatMap((v) => v.cases).map(([id]) => {
+  const s = S[id], ok = s.checks.filter((c) => c.ok).length;
+  return `<tr><td><a href="#${id}" data-go="${id}">${esc(NAMES[id])}</a></td><td class="what">${esc(WHAT[id])}</td><td>${ok} of ${s.checks.length}</td></tr>`;
+}).join("");
+$("runs").addEventListener("click", (e) => {
+  const a = e.target.closest("a[data-go]"); if (!a) return;
+  e.preventDefault(); cur = a.dataset.go; view = VIEWS.find((v) => v.cases.some((c) => c[0] === cur)).id;
+  history.replaceState(null, "", "#" + cur); render();
+  document.querySelector(".desk").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+});
+render();
+</script>
+</body>
+</html>

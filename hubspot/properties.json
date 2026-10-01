@@ -1,0 +1,46 @@
+{
+  "group": { "name": "ai_inquiry_review", "label": "Inquiry review (AI suggestions)", "displayOrder": -1 },
+  "properties": [
+    { "name": "ai_inquiry_specialty", "label": "Suggested specialty", "type": "string", "fieldType": "text",
+      "description": "What the physician wrote about their specialty, or 'not stated'. Suggestion only; a person confirms it." },
+    { "name": "ai_inquiry_license_states", "label": "Suggested license states", "type": "string", "fieldType": "text",
+      "description": "States the physician says they are licensed in, or 'not stated'." },
+    { "name": "ai_inquiry_certification_statement", "label": "What they say about QME certification", "type": "enumeration", "fieldType": "select",
+      "description": "What the message says about certification. Never overwrites the staff-verified status.",
+      "options": [
+        { "label": "Says they are a certified QME", "value": "says_certified_qme" },
+        { "label": "Says certification is in progress", "value": "says_in_progress" },
+        { "label": "Says they are not certified", "value": "says_not_certified" },
+        { "label": "Not stated", "value": "not_stated" } ] },
+    { "name": "ai_inquiry_intent", "label": "What they are looking for", "type": "enumeration", "fieldType": "select",
+      "description": "Intent of the inquiry, separate from certification status.",
+      "options": [
+        { "label": "Exploring QME certification", "value": "explore_qme_certification" },
+        { "label": "Established QME looking at the group", "value": "established_qme_joining" },
+        { "label": "Other request", "value": "other" },
+        { "label": "Unclear", "value": "unclear" } ] },
+    { "name": "ai_inquiry_call_availability", "label": "Availability for a first call", "type": "string", "fieldType": "text",
+      "description": "When they can talk. Not evaluation capacity." },
+    { "name": "ai_inquiry_review_status", "label": "Inquiry review status", "type": "enumeration", "fieldType": "select",
+      "description": "Set by the workflow's rules, not by the model.",
+      "options": [
+        { "label": "Ready for review", "value": "ready_for_review" },
+        { "label": "Needs clarification", "value": "needs_clarification" },
+        { "label": "Conflicts with the verified record", "value": "conflict_with_verified_record" },
+        { "label": "Needs information", "value": "needs_information" } ] },
+    { "name": "ai_inquiry_flags", "label": "Inquiry review flags", "type": "string", "fieldType": "textarea",
+      "description": "Checks that failed or need attention (unsupported value, conflict, out-of-state license)." },
+    { "name": "ai_inquiry_ref", "label": "Inquiry reference", "type": "string", "fieldType": "text",
+      "description": "Submission reference (contact id : submission time). Used to avoid duplicate work." }
+  ],
+  "assumed_existing_in_your_portal": [
+    { "name": "physician_credentials", "label": "Credentials", "type": "string", "fieldType": "text",
+      "description": "The credentials field of the join form. Map to your own property in the workflow's Configuration node." },
+    { "name": "expedient_qme_status_verified", "label": "QME status (verified by staff)", "type": "enumeration", "fieldType": "select",
+      "description": "Staff-verified status. Read by the workflow to detect conflicts, never written.",
+      "options": [
+        { "label": "Certified QME", "value": "certified_qme" },
+        { "label": "In progress", "value": "in_progress" },
+        { "label": "Not certified", "value": "not_certified" } ] }
+  ]
+}

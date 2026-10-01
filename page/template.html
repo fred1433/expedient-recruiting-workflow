@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Physician inquiry workflow</title>
+<meta name="description" content="A reference n8n workflow that turns a physician's join inquiry into a reviewable HubSpot task, shown on recorded test runs with synthetic inquiries.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F5F7F4; --desk:#E4EAE3; --desk-edge:#CCD6CB; --sheet:#FFFFFF;
+  --ink:#17212B; --ink-2:#465360; --ink-3:#6B7783; --rule:#D3DAD2;
+  --teal:#1D5C58; --teal-soft:#DCEBE8; --wine:#8C2B47; --wine-soft:#F4E3E8;
+  --amber:#F4DE72; --amber-soft:#FAF0BE; --slate:#2C3E50;
+  --serif:"Source Serif 4", Georgia, serif; --sans:"Public Sans", system-ui, sans-serif;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.55 var(--sans);font-feature-settings:"tnum" 0}
+a{color:var(--teal)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:3px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+@media (max-width:640px){.wrap{padding:0 16px}.desk{padding:14px 12px 18px;border-radius:10px}.views{flex-wrap:wrap}.views button{padding:8px 10px 10px;font-size:14px}.msg{font-size:20px}.fields .row{grid-template-columns:1fr;gap:2px;padding:9px 14px}.top{font-size:13px}}
+
+/* top line */
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 0;border-bottom:1px solid var(--rule);font-size:14px;color:var(--ink-2)}
+.top .by{white-space:nowrap;display:flex;align-items:center;gap:8px;color:var(--ink);font-weight:600;text-decoration:none}
+.top img{width:20px;height:20px}
+
+/* intro */
+.intro{padding:40px 0 22px;display:grid;grid-template-columns:minmax(0,820px);gap:18px}
+h1{font:500 clamp(34px,4.8vw,56px)/1.05 var(--serif);letter-spacing:-.015em;margin:0;font-variation-settings:"opsz" 60}
+.lead{font-size:19px;line-height:1.55;color:var(--ink-2);margin:0;max-width:66ch}
+.recorded{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--ink-3);margin:6px 0 0}
+.recorded b{color:var(--ink);font-weight:600}
+
+/* desk */
+.desk{background:var(--desk);border:1px solid var(--desk-edge);border-radius:14px;padding:22px 22px 26px;margin:10px 0 0}
+.views{display:flex;gap:4px;border-bottom:1px solid var(--desk-edge);margin:0 0 16px;overflow-x:auto;scrollbar-width:none}
+.views button{background:none;border:0;padding:10px 14px 12px;font-weight:600;font-size:15px;color:var(--ink-2);border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;cursor:pointer}
+.views button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--ink)}
+.views small{font-weight:500;color:var(--ink-3);margin-left:6px}
+.cases{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.cases button{background:transparent;border:1px solid var(--desk-edge);border-radius:999px;padding:6px 14px;font-size:14px;cursor:pointer;color:var(--ink-2)}
+.cases button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.caseNote{font-size:15px;color:var(--ink-2);margin:-6px 0 18px;max-width:80ch}
+
+.surface{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:22px;align-items:start}
+@media (max-width:900px){.surface{grid-template-columns:1fr}}
+.colHead{font-size:13px;font-weight:600;color:var(--ink-2);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.colHead svg{flex:none}
+
+/* the form slip */
+.slip{background:var(--sheet);border-radius:6px;box-shadow:0 1px 0 var(--desk-edge),0 0 0 1px var(--desk-edge);padding:0 0 22px;position:relative}
+.slip .band{height:8px;background:repeating-linear-gradient(90deg,var(--slate) 0 22px,transparent 22px 26px);opacity:.9;border-radius:6px 6px 0 0}
+.slip dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:18px 22px 0;font-size:14px}
+.slip dt{color:var(--ink-3)}
+.slip dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.msg{font:400 23px/1.5 var(--serif);margin:18px 22px 0;color:var(--ink);font-variation-settings:"opsz" 24}
+.msg.short{font-size:30px}
+.msgLabel{margin:20px 22px 0;font-size:14px;color:var(--ink-3)}
+mark{background:linear-gradient(transparent 12%,var(--amber-soft) 12%,var(--amber-soft) 92%,transparent 92%);color:inherit;padding:0 1px;border-radius:2px;transition:background .15s}
+mark.on{background:linear-gradient(transparent 6%,var(--amber) 6%,var(--amber) 96%,transparent 96%);box-shadow:0 2px 0 #C9A92B}
+.slipFoot{margin:18px 22px 0;font-size:13px;color:var(--ink-3)}
+
+/* hubspot side */
+.hs{display:grid;gap:18px}
+.sheet{background:var(--sheet);border-radius:6px;box-shadow:0 0 0 1px var(--desk-edge)}
+.fields{padding:6px 0}
+.fields .row{display:grid;grid-template-columns:minmax(150px,210px) 1fr;gap:12px;padding:9px 18px;border-top:1px solid #EEF1ED;cursor:default}
+.fields .row:first-child{border-top:0}
+.fields .row[data-k]{cursor:pointer}
+.fields .row.on{background:#FBF6DA}
+.fields .k{font-size:13px;color:var(--ink-3);padding-top:2px}
+.fields .v{font-size:15px}
+.fields .v .ns{color:var(--ink-3);font-style:italic}
+.fields .ev{display:block;font:italic 400 14px/1.4 var(--serif);color:var(--ink-2);margin-top:2px}
+.pill{display:inline-block;font-size:13px;font-weight:600;padding:1px 10px;border-radius:999px;background:var(--teal-soft);color:var(--teal)}
+.pill.warn{background:#F6EED0;color:#6C5410}
+.pill.bad{background:var(--wine-soft);color:var(--wine)}
+.flags{font-size:13px;color:var(--ink-2);overflow-wrap:anywhere}
+.kept{padding:12px 18px;border-top:1px solid #EEF1ED;font-size:14px;background:#F7FAF8;border-radius:0 0 6px 6px}
+.kept b{font-weight:600}
+.kept table{border-collapse:collapse;margin-top:6px;width:100%}
+.kept td{padding:3px 10px 3px 0;vertical-align:top}
+.kept td:last-child{color:var(--teal);font-weight:600;white-space:nowrap}
+
+.task{border-left:4px solid var(--teal)}
+.task.high{border-left-color:var(--wine)}
+.task .head{padding:16px 18px 10px}
+.task .subject{font-weight:600;font-size:17px;line-height:1.35}
+.task .meta{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--ink-2);margin-top:8px}
+.task .meta span b{font-weight:600;color:var(--ink)}
+.task .body{border-top:1px solid #EEF1ED;padding:4px 18px 14px;font-size:14.5px;line-height:1.55;color:var(--ink)}
+.task .body p{margin:10px 0}
+.task .body hr{border:0;border-top:1px dashed var(--rule);margin:16px 0}
+.task .body p:last-child{font-size:11px}
+.noSend{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;color:var(--ink-2);padding:10px 18px 14px;border-top:1px solid #EEF1ED}
+
+/* recovery timeline */
+.timeline{list-style:none;margin:0;padding:8px 0}
+.timeline li{display:grid;grid-template-columns:62px 14px 1fr;gap:10px;padding:7px 18px 7px 12px;font-size:14.5px;align-items:start}
+.timeline .t{font-variant-numeric:tabular-nums;color:var(--ink-3);text-align:right;font-size:13px;padding-top:1px}
+.timeline .dot{width:10px;height:10px;border-radius:50%;background:var(--teal);margin-top:6px}
+.timeline .bad .dot{background:var(--wine)}
+.timeline .odd .dot{background:#C9A92B}
+.timeline .mark .dot{background:var(--ink);border-radius:2px}
+.timeline .note{display:block;font-size:13px;color:var(--ink-2)}
+.timeline .bad .what{color:var(--wine)}
+.timeline .attempt{grid-column:1/-1;padding:10px 18px 2px 12px;font-size:12.5px;font-weight:600;color:var(--ink-3);border-top:1px solid #EEF1ED;margin-top:4px}
+.timeline li:first-child.attempt{border-top:0;margin-top:0}
+.timeline li.attempt{display:block}
+.end dl{display:grid;grid-template-columns:1fr auto;margin:0;padding:6px 18px}
+.end dt,.end dd{padding:8px 0;border-top:1px solid #EEF1ED;margin:0;font-size:15px}
+.end dt:first-of-type,.end dd:first-of-type{border-top:0}
+.end dd{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.alertText{margin:0 18px 14px;padding:10px 12px;background:#F7F3F4;border-radius:4px;font-size:13.5px;color:var(--ink-2)}
+
+.checks{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:4px 24px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));font-size:14px;color:var(--ink-2)}
+.checks li{display:flex;gap:8px;align-items:flex-start}
+.checks svg{flex:none;margin-top:3px}
+.checksHead{margin:22px 0 0;font-size:13px;font-weight:600;color:var(--ink-2)}
+
+/* proof */
+.proof{padding:72px 0 24px}
+h2{font:500 clamp(26px,3.2vw,36px)/1.15 var(--serif);margin:0 0 10px;letter-spacing:-.01em}
+.proof .intro2{color:var(--ink-2);max-width:70ch;margin:0 0 30px;font-size:17px}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:34px 56px}
+@media (max-width:820px){.facts{grid-template-columns:1fr;gap:26px}}
+.facts h3{font:600 17px/1.3 var(--sans);margin:0 0 6px}
+.facts p,.facts li{color:var(--ink-2);font-size:15.5px;margin:0 0 8px}
+.facts ul{margin:0;padding-left:18px}
+.facts code{font-size:13.5px;background:#E9EEE8;padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+.runs{margin:48px 0 0;border-top:2px solid var(--ink)}
+.runs table{width:100%;border-collapse:collapse;font-size:15px}
+.runs th{text-align:left;font-weight:600;font-size:13px;color:var(--ink-3);padding:10px 12px 8px 0;border-bottom:1px solid var(--rule)}
+.runs td{padding:10px 12px 10px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.runs td:last-child{white-space:nowrap;color:var(--teal);font-weight:600}
+.runs .what{color:var(--ink-2)}
+@media (max-width:640px){.runs .what{display:none}}
+
+.files{padding:56px 0 64px}
+.files ul{list-style:none;padding:0;margin:16px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0 40px}
+.files li{border-top:1px solid var(--rule);padding:12px 0}
+.files a{font-weight:600;text-decoration:none}
+.files a:hover{text-decoration:underline}
+.files span{display:block;font-size:14px;color:var(--ink-2)}
+.sign{margin:48px 0 0;padding-top:20px;border-top:1px solid var(--rule);font-size:14.5px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:640px){.fields .row{grid-template-columns:1fr;gap:2px;padding:9px 14px}.kept td{padding-right:6px}.timeline li{grid-template-columns:52px 12px 1fr;padding-right:10px}.end dt,.end dd{font-size:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span>Prepared for Expedient Medicolegal Services</span>
+    <a class="by" href="https://theaipipe.com" rel="noopener"><img src="favicon.svg" alt="">The AI Pipe</a>
+  </div>
+
+  <section class="intro">
+    <h1>A physician inquiry, ready for your recruiting team in HubSpot.</h1>
+    <p class="lead">A reference n8n workflow, run on invented inquiries shaped like the public Join Expedient form. It reads the message, keeps to what the physician actually wrote, and leaves a review task with a proposed reply on the contact. Someone on your team decides what to say and sends it.</p>
+    <p class="recorded" id="recorded"></p>
+  </section>
+
+  <section class="desk" aria-label="Recorded test runs">
+    <div class="views" role="tablist" id="views"></div>
+    <div class="cases" id="cases" role="group" aria-label="Recorded runs in this view"></div>
+    <p class="caseNote" id="caseNote"></p>
+    <div class="surface" id="surface"></div>
+    <p class="checksHead" id="checksHead"></p>
+    <ul class="checks" id="checks"></ul>
+  </section>
+
+  <section class="proof">
+    <h2>For whoever looks after HubSpot and n8n</h2>
+    <p class="intro2">The workflow is a reference, not something to switch on as is. It was tested on n8n <span data-n8n></span> in Docker against a HubSpot API simulator; no HubSpot account was used. Your properties, permissions, trigger and existing workflows have to be mapped before activation.</p>
+    <div class="facts">
+      <div>
+        <h3>One way in</h3>
+        <p>Every two minutes, a poller asks HubSpot's contact search for contacts whose <code>recent_conversion_date</code> is newer than its checkpoint, minus a ten-minute overlap. A returning physician who submits again counts as a new inquiry, because the submission time changes. The workflow's own writes never touch that property, so it cannot trigger itself.</p>
+        <p>It needs a private app token, not HubSpot's "Send a webhook" workflow action, and it registers no HubSpot Trigger node, so it does not compete with a trigger you may already run in n8n.</p>
+      </div>
+      <div>
+        <h3>What the model sees</h3>
+        <p>Two fields, from an allowlist in the Configuration node: credentials and message. Name, email, phone, owner, notes, history and attachments stay in HubSpot. One provider was tested, OpenAI's <code data-model></code>, with no fallback to another. A message too short to read never reaches the model.</p>
+        <p>The model proposes; plain code checks. A suggested value whose quote cannot be found word for word in what the physician wrote is dropped and flagged. Routing to review is a rule, not a model judgment.</p>
+      </div>
+      <div>
+        <h3>What it writes, and what it never writes</h3>
+        <p>Suggestions go to their own group of contact properties (<code>ai_inquiry_*</code>), plus one task per open inquiry, assigned and due the next business day at 10:00 Pacific. It never writes lifecycle stage, owner or a staff-verified value; when a message contradicts the verified record, the task says so and goes to high priority. Nothing is emailed.</p>
+      </div>
+      <div>
+        <h3>When something fails</h3>
+        <p>A recovery ledger in the n8n Postgres records, per submission, which effects already happened. A retry finishes the missing step instead of replaying everything: the model is not asked twice, the contact is not rewritten, and a task that may already exist is looked up by its reference before anything is created. After three attempts it stops and sends an alert that carries the submission reference and the failing step, never the message.</p>
+      </div>
+      <div>
+        <h3>Before it runs on your portal</h3>
+        <ul>
+          <li>Map your property names in the Configuration node; the README lists the eight to create.</li>
+          <li>Check which forms set <code>recent_conversion_date</code> on physician contacts, and set <code>JOIN_FORM_NAME</code> so only the join form counts.</li>
+          <li>Choose the owner who receives the tasks and the channel for alerts.</li>
+          <li>Run it against a sandbox or test portal first.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Known limits</h3>
+        <ul>
+          <li>HubSpot keeps one value of the message property. Two submissions from the same physician inside one polling cycle leave only the latest text to read.</li>
+          <li>Not tested here: a real HubSpot portal, another model provider, a restore into a clean instance, a production VPS.</li>
+          <li>Model readings vary slightly from run to run; the checks above held on this run.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="runs">
+      <table>
+        <thead><tr><th>Recorded run</th><th class="what">What it shows</th><th>Checks</th></tr></thead>
+        <tbody id="runs"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="files">
+    <h2>Files</h2>
+    <ul>
+      <li><a href="files/process-physician-inquiry.json" download>process-physician-inquiry.json</a><span>The n8n workflow that handles one submission.</span></li>
+      <li><a href="files/poll-physician-inquiries.json" download>poll-physician-inquiries.json</a><span>The poller: the single entry point.</span></li>
+      <li><a href="files/README.md" download>README.md</a><span>Setup, configuration, what goes to the model, limits.</span></li>
+      <li><a href="files/hubspot-properties.json" download>hubspot-properties.json</a><span>The contact properties the workflow expects.</span></li>
+      <li><a href="files/recovery-ledger.sql" download>recovery-ledger.sql</a><span>The ledger tables, in the Postgres n8n already uses.</span></li>
+      <li><a href="files/model-instructions.txt" download>model-instructions.txt</a><span>The full instructions sent to the model.</span></li>
+      <li><a href="files/recorded-test-runs.json" download>recorded-test-runs.json</a><span>Every check from the run shown on this page.</span></li>
+    </ul>
+    <div class="sign">
+      <span>Frederic de Choulot, The AI Pipe</span>
+      <span>All physicians, emails and phone numbers on this page are invented. No patient or client data was used.</span>
+    </div>
+  </section>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const S = DATA.scenarios;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const VIEWS = [
+  { id: "ordinary", label: "An ordinary inquiry", cases: [
+    ["ordinary", "Dr. Raman, exploring QME work"],
+    ["established", "Dr. Okoye, an established QME"]] },
+  { id: "missing", label: "Missing or conflicting information", cases: [
+    ["sparse", "Dr. Bell, one word"],
+    ["outOfState", "Dr. Park, licensed outside California"],
+    ["conflict", "Dr. Ortiz, contradicts the verified record"],
+    ["unclear", "Dr. Liu, unclear request"]] },
+  { id: "recovery", label: "Recovery after a failure", cases: [
+    ["restartMidway", "n8n restarts mid-run"],
+    ["responseLost", "Task created, answer lost"],
+    ["taskFailsAfterUpdate", "Task fails after the contact update"],
+    ["doubleDelivery", "Picked up twice at once"],
+    ["samePhysicianAgain", "Same physician writes again"],
+    ["givesUp", "HubSpot keeps failing"]] },
+];
+const NOTES = {
+  ordinary: "The kind of message a physician leaves on the join form: some facts, a question, a time to talk, and nothing about certification.",
+  established: "A physician who says they already work as a QME. No call window given, so none is suggested.",
+  sparse: "One word. No model call: plain code marks it as needing information and drafts a reply asking for the basics.",
+  outOfState: "Licensed in two other states. Not rejected: the task asks the coordinator to clarify.",
+  conflict: "This contact already exists, with a QME status your team verified, an owner and a lifecycle stage. The new message contradicts the verified status.",
+  unclear: "A message that does not say what the physician wants. Nothing is invented to fill the gaps.",
+  restartMidway: "HubSpot was made to take 15 seconds to answer the task request, and n8n was restarted while it waited. HubSpot finished creating the task anyway; n8n never heard back.",
+  responseLost: "HubSpot created the task, then the connection dropped before the answer reached n8n.",
+  taskFailsAfterUpdate: "The suggestions were written to the contact, then HubSpot answered 502 to the task request.",
+  doubleDelivery: "Two polls started at the same moment and both saw the same new submission.",
+  samePhysicianAgain: "Dr. Raman submitted the form in the morning, then again in the afternoon with new information.",
+  givesUp: "Every attempt to read the contact got a 503 from HubSpot.",
+};
+const L = {
+  says_certified_qme: "Says they are a certified QME", says_in_progress: "Says certification is in progress",
+  says_not_certified: "Says they are not certified", not_stated: "Not stated",
+  explore_qme_certification: "Exploring QME certification", established_qme_joining: "Established QME looking at the group",
+  other: "Other request", unclear: "Unclear",
+  ready_for_review: ["Ready for review", ""], needs_clarification: ["Needs clarification", "warn"],
+  conflict_with_verified_record: ["Conflicts with the verified record", "bad"], needs_information: ["Needs information", "warn"],
+  certified_qme: "Certified QME", opportunity: "Opportunity",
+};
+
+let view = "ordinary", cur = "ordinary";
+try { const h = decodeURIComponent(location.hash.slice(1)); if (S[h]) { cur = h; view = VIEWS.find((v) => v.cases.some((c) => c[0] === h)).id; } } catch (e) {}
+
+const ICON_OK = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#1D5C58" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICON_NO = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="#8C2B47" stroke-width="2" stroke-linecap="round"/></svg>';
+const ICON_FORM = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="1.5" width="11" height="13" rx="1.5" fill="none" stroke="currentColor"/><path d="M5 5h6M5 8h6M5 11h3.5" stroke="currentColor"/></svg>';
+const ICON_CRM = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.5" fill="none" stroke="currentColor"/><path d="M3 14c.6-2.8 2.6-4.2 5-4.2s4.4 1.4 5 4.2" fill="none" stroke="currentColor"/></svg>';
+
+function renderViews() {
+  $("views").innerHTML = VIEWS.map((v) => `<button role="tab" aria-selected="${v.id === view}" data-v="${v.id}">${esc(v.label)}<small>${v.cases.length}</small></button>`).join("");
+  const v = VIEWS.find((x) => x.id === view);
+  $("cases").innerHTML = v.cases.map(([id, l]) => `<button aria-pressed="${id === cur}" data-c="${id}">${esc(l)}</button>`).join("");
+}
+
+// Wrap each quoted piece of evidence found in the text in <mark data-k="field ...">.
+function highlight(text, evidence) {
+  const keys = Array.from({ length: text.length }, () => []);
+  const low = text.toLowerCase().replace(/[‘’]/g, "'");
+  for (const [k, q] of Object.entries(evidence)) {
+    const i = low.indexOf(String(q).toLowerCase().replace(/[‘’]/g, "'"));
+    if (i < 0) continue;
+    for (let j = i; j < i + q.length; j++) keys[j].push(k);
+  }
+  let out = "", run = "", runKeys = null;
+  const flush = () => { if (!run) return; out += runKeys.length ? `<mark data-k="${runKeys.join(" ")}">${esc(run)}</mark>` : esc(run); run = ""; };
+  for (let i = 0; i < text.length; i++) {
+    const k = keys[i].join(" ");
+    if (runKeys === null || k !== runKeys.join(" ")) { flush(); runKeys = keys[i]; }
+    run += text[i];
+  }
+  flush();
+  return out;
+}
+
+function fmtDue(iso) {
+  try {
+    return new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso)) + " PT";
+  } catch (e) { return iso; }
+}
+
+function taskCard(t, opts = {}) {
+  if (!t) return "";
+  return `<div class="sheet task ${t.priority === "HIGH" ? "high" : ""}">
+    <div class="head">
+      <div class="subject">${esc(t.subject)}</div>
+      <div class="meta">
+        <span>Due <b>${esc(fmtDue(t.due))}</b></span>
+        <span>Assigned to <b>recruiting owner</b> (test id ${esc(t.owner)})</span>
+        <span>Priority <b>${t.priority === "HIGH" ? "High" : "Medium"}</b></span>
+        <span>Status <b>Not started</b></span>
+        <span>Associated <b>${t.associated ? "with the contact" : "no"}</b></span>
+      </div>
+    </div>
+    ${opts.collapsed ? "" : `<div class="body">${t.body}</div>`}
+    <div class="noSend">${ICON_OK}<span>Task body as the workflow wrote it. The proposed reply stays here until someone edits it and sends it.</span></div>
+  </div>`;
+}
+
+function slip(s, evidence) {
+  const f = s.form;
+  const short = f.message.length < 30;
+  return `<div>
+    <p class="colHead">${ICON_FORM}What arrived through the join form</p>
+    <div class="slip">
+      <div class="band"></div>
+      <dl>
+        <dt>Name</dt><dd>${esc(f.name)}</dd>
+        <dt>Credentials</dt><dd>${highlight(f.credentials, evidence)}</dd>
+        <dt>Email</dt><dd>${esc(f.email)}</dd>
+        <dt>Phone</dt><dd>${esc(f.phone)}</dd>
+      </dl>
+      <p class="msgLabel">Message</p>
+      <p class="msg ${short ? "short" : ""}">${highlight(f.message, evidence)}</p>
+      <p class="slipFoot">${s.model.length ? `Only the credentials and the message went to the model (${esc(s.model[0].served)}, ${(s.model[0].ms / 1000).toFixed(1)} s).` : "Nothing went to the model: the message is too short to read."}</p>
+    </div>
+  </div>`;
+}
+
+function fieldsPanel(s) {
+  const r = s.reading, v = r.values, e = r.evidence;
+  const ns = (x) => (x == null || x === "not stated" || x === "not_stated") ? '<span class="ns">Not stated</span>' : esc(L[x] && typeof L[x] === "string" ? L[x] : x);
+  const row = (k, label, val) => `<div class="row" ${e[k] ? `data-k="${k}" tabindex="0"` : ""}><div class="k">${label}</div><div class="v">${val}${e[k] ? `<span class="ev">"${esc(e[k])}"</span>` : ""}</div></div>`;
+  const st = L[v.review_status] || [v.review_status, ""];
+  const kept = r.protected ? `<div class="kept"><b>Left exactly as it was</b><table>${r.protected.map((p) => `<tr><td>${esc({ expedient_qme_status_verified: "QME status (verified by staff)", hubspot_owner_id: "Contact owner", lifecyclestage: "Lifecycle stage" }[p.k])}</td><td>${esc(L[p.before] || p.before)}</td><td>${p.before === p.after ? "unchanged" : "changed"}</td></tr>`).join("")}</table></div>` : "";
+  return `<div>
+    <p class="colHead">${ICON_CRM}What your team finds on the contact in HubSpot</p>
+    <div class="sheet fields">
+      ${row("review_status", "Inquiry review status", `<span class="pill ${st[1]}">${esc(st[0])}</span>`)}
+      ${row("specialty", "Suggested specialty", ns(v.specialty))}
+      ${row("license_states", "Suggested license states", ns(v.license_states))}
+      ${row("certification_statement", "What they say about QME certification", ns(v.certification_statement))}
+      ${row("intent", "What they are looking for", ns(v.intent))}
+      ${row("call_availability", "Availability for a first call", ns(v.call_availability))}
+      ${v.flags && v.flags !== "none" ? row("flags", "Review flags", `<span class="flags">${esc(v.flags)}</span>`) : ""}
+      ${kept}
+    </div>
+  </div>`;
+}
+
+function timeline(s) {
+  let html = "", pending = null;
+  for (const c of s.calls) {
+    if (c.what === "Looked for new form submissions") {
+      // a poll heading is shown only if something followed it
+      pending = `<li class="attempt">Poll at +${c.t.toFixed(1)} s</li>`;
+      continue;
+    }
+    if (pending) { html += pending; pending = null; }
+    let cls = "", note = "";
+    if (c.marker === "restart") { cls = "mark"; note = "The execution in progress is cut off."; }
+    else if (c.marker === "alert") { cls = "bad"; note = ""; }
+    else if (c.fault === "delay") { cls = "odd"; note = "Still waiting for HubSpot when n8n restarted. HubSpot created the task 15 s later, with nobody listening."; }
+    else if (c.dropped) { cls = "odd"; note = "Created in HubSpot. The answer never reached n8n."; }
+    else if (c.status >= 400) { cls = "bad"; note = `HubSpot answered ${c.status}${c.times ? `, ${c.times} tries in a row` : ""}.`; }
+    html += `<li class="${cls}"><span class="t">+${c.t.toFixed(1)} s</span><span class="dot"></span><span><span class="what">${esc(c.what)}</span>${note ? `<span class="note">${esc(note)}</span>` : ""}</span></li>`;
+  }
+  return `<div>
+    <p class="colHead">${ICON_FORM}What happened, call by call, as recorded</p>
+    <div class="sheet"><ol class="timeline">${html}</ol></div>
+  </div>`;
+}
+
+function endState(s) {
+  const L0 = s.ledger[s.ledger.length - 1] || {};
+  const crashed = s.executions.filter((e) => e.status === "crashed").length;
+  const failedEx = s.executions.filter((e) => e.status === "error").length;
+  const alert = s.calls.find((c) => c.marker === "alert");
+  const rows = [
+    ["Review tasks in HubSpot", s.tasks],
+    ["Contact updates", s.patches],
+    ["Model calls", s.model.length],
+    ["Attempts", s.ledger.map((l) => l.attempts).join(" + ")],
+    ["Submissions recorded", s.ledger.length],
+    ["Executions in n8n", `${s.executions.length}${crashed ? `, ${crashed} crashed` : ""}${failedEx ? `, ${failedEx} failed` : ""}`],
+    ["Final state", L0.status === "done" ? (L0.task_action === "reconciled" ? "Done, existing task found" : L0.task_action === "appended" ? "Done, added to the open task" : "Done") : "Stopped, alert sent"],
+  ];
+  return `<div class="hs">
+    <div>
+      <p class="colHead">${ICON_CRM}Where it ended</p>
+      <div class="sheet end"><dl>${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      ${alert ? `<p class="alertText">Alert as sent: ${esc(alert.alert)}</p>` : ""}</div>
+    </div>
+    ${s.task ? taskCard(s.task, { collapsed: s.id !== "samePhysicianAgain" }) : ""}
+  </div>`;
+}
+
+function render() {
+  const s = S[cur];
+  renderViews();
+  $("caseNote").textContent = NOTES[cur] || "";
+  if (view === "recovery") {
+    $("surface").innerHTML = timeline(s) + endState(s);
+  } else {
+    $("surface").innerHTML = slip(s, s.reading.evidence) + `<div class="hs">${fieldsPanel(s)}${taskCard(s.task)}</div>`;
+  }
+  const ok = s.checks.filter((c) => c.ok).length;
+  $("checksHead").textContent = `Checks on this run: ${ok} of ${s.checks.length} held`;
+  $("checks").innerHTML = s.checks.map((c) => `<li>${c.ok ? ICON_OK : ICON_NO}<span>${esc(/^n8n/.test(c.label) ? c.label : c.label.charAt(0).toUpperCase() + c.label.slice(1))}</span></li>`).join("");
+  bindMarks();
+}
+
+function bindMarks() {
+  const set = (k, on) => {
+    document.querySelectorAll("mark[data-k]").forEach((m) => m.classList.toggle("on", on && m.dataset.k.split(" ").includes(k)));
+    document.querySelectorAll(".fields .row[data-k]").forEach((r) => r.classList.toggle("on", on && r.dataset.k === k));
+  };
+  document.querySelectorAll(".fields .row[data-k]").forEach((r) => {
+    r.addEventListener("mouseenter", () => set(r.dataset.k, true));
+    r.addEventListener("mouseleave", () => set(r.dataset.k, false));
+    r.addEventListener("focus", () => set(r.dataset.k, true));
+    r.addEventListener("blur", () => set(r.dataset.k, false));
+    r.addEventListener("click", () => set(r.dataset.k, true));
+  });
+  document.querySelectorAll("mark[data-k]").forEach((m) => {
+    m.addEventListener("mouseenter", () => set(m.dataset.k.split(" ")[0], true));
+    m.addEventListener("mouseleave", () => set(m.dataset.k.split(" ")[0], false));
+  });
+}
+
+$("views").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-v]"); if (!b) return;
+  view = b.dataset.v; cur = VIEWS.find((v) => v.id === view).cases[0][0];
+  history.replaceState(null, "", "#" + cur); render();
+});
+$("views").addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const i = VIEWS.findIndex((v) => v.id === view), n = (i + (e.key === "ArrowRight" ? 1 : VIEWS.length - 1)) % VIEWS.length;
+  view = VIEWS[n].id; cur = VIEWS[n].cases[0][0]; render();
+  document.querySelector(`#views button[data-v="${view}"]`).focus();
+});
+$("cases").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-c]"); if (!b) return;
+  cur = b.dataset.c; history.replaceState(null, "", "#" + cur); render();
+});
+
+const ran = new Date(DATA.ranAt);
+const day = ran.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", month: "long", day: "numeric", year: "numeric" });
+$("recorded").innerHTML = `<span><b>Recorded test runs</b>, ${esc(day)}</span><span>n8n ${esc(DATA.n8n)} in Docker</span><span>HubSpot API simulator, no HubSpot account</span><span>${DATA.passedChecks} of ${DATA.totalChecks} checks held</span>`;
+document.querySelectorAll("[data-n8n]").forEach((n) => (n.textContent = DATA.n8n));
+document.querySelectorAll("[data-model]").forEach((n) => (n.textContent = DATA.model));
+const WHAT = {
+  ordinary: "A real-looking inquiry becomes one assigned task with a proposed reply.",
+  established: "An established QME is read as such; no call window is invented.",
+  sparse: "A one-word message: no model call, a reply that asks for the basics.",
+  outOfState: "Licensed outside California: clarification, not rejection.",
+  conflict: "A message contradicts the verified record: nothing overwritten, conflict raised.",
+  unclear: "An unclear request: routed to clarification, nothing invented.",
+  doubleDelivery: "Two polls at once: processed once, one task.",
+  samePhysicianAgain: "A second inquiry is read and added to the open task.",
+  taskFailsAfterUpdate: "The retry creates the missing task without rewriting the contact.",
+  responseLost: "The retry finds the task already created instead of making a second.",
+  restartMidway: "A restart mid-run: picked up after the lease expires, no duplicate.",
+  givesUp: "Persistent failure: three attempts, then an alert without the message.",
+};
+const NAMES = Object.fromEntries(VIEWS.flatMap((v) => v.cases));
+$("runs").innerHTML = VIEWS.flatMap((v) => v.cases).map(([id]) => {
+  const s = S[id], ok = s.checks.filter((c) => c.ok).length;
+  return `<tr><td><a href="#${id}" data-go="${id}">${esc(NAMES[id])}</a></td><td class="what">${esc(WHAT[id])}</td><td>${ok} of ${s.checks.length}</td></tr>`;
+}).join("");
+$("runs").addEventListener("click", (e) => {
+  const a = e.target.closest("a[data-go]"); if (!a) return;
+  e.preventDefault(); cur = a.dataset.go; view = VIEWS.find((v) => v.cases.some((c) => c[0] === cur)).id;
+  history.replaceState(null, "", "#" + cur); render();
+  document.querySelector(".desk").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+});
+render();
+</script>
+</body>
+</html>
