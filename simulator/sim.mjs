@@ -27,6 +27,11 @@ function reset(seed = {}) {
     alerts: [],
     modelCalls: [],
   };
+  for (const t of seed.tasks || []) {
+    const id = String(t.id);
+    state.tasks.set(id, { id, properties: { hs_object_id: id, ...t.properties }, createdAt: iso(), updatedAt: iso() });
+    if (t.contactId) { const cid = String(t.contactId); if (!state.assoc.has(cid)) state.assoc.set(cid, new Set()); state.assoc.get(cid).add(id); }
+  }
   for (const c of seed.contacts || []) {
     const id = String(c.id || state.nextId++);
     const now = new Date().toISOString();
@@ -71,6 +76,7 @@ function matchFault(method, path) {
     if (f.times === 0) continue;
     if (f.method && f.method !== method) continue;
     if (f.path && !new RegExp(f.path).test(path)) continue;
+    if (f.skip > 0) { f.skip -= 1; continue; }
     if (f.times > 0) f.times -= 1;
     f.hits = (f.hits || 0) + 1;
     return f;
@@ -133,7 +139,7 @@ function submitForm(body) {
     if (body[k] !== undefined) c.properties[k] = body[k];
   }
   c.properties.recent_conversion_date = at;
-  c.properties.recent_conversion_event_name = "Join Expedient";
+  c.properties.recent_conversion_event_name = body.event || "Join Expedient";
   c.updatedAt = iso();
   return { id: c.id, recent_conversion_date: at };
 }
@@ -185,6 +191,16 @@ async function handle(req, res) {
   if (path === "/__sim/log") return json(res, 200, state.log);
   if (path === "/__sim/model") { if (method === "POST") modelMode = { mode: body.mode || "replay", replies: body.replies || modelMode.replies }; return json(res, 200, { mode: modelMode.mode, replies: modelMode.replies }); }
   if (path === "/__alerts") { state.alerts.push({ at: iso(), body }); return json(res, 200, { ok: true }); }
+  // Alert endpoint the workflow posts to; it goes through the fault table like any other call.
+  if (path.startsWith("/hooks/")) {
+    const e = { at: iso(), method, path };
+    state.log.push(e);
+    const f = matchFault(method, path);
+    if (f && f.mode === "error") { e.status = f.status || 500; e.fault = "error"; return json(res, e.status, { ok: false }); }
+    state.alerts.push({ at: iso(), body });
+    e.status = 200;
+    return json(res, 200, { ok: true });
+  }
 
   const entry = { at: iso(), method, path };
   state.log.push(entry);
@@ -208,6 +224,15 @@ async function handle(req, res) {
     ? await modelReply(body, req.headers.authorization)
     : route(method, path, url, body);
   entry.status = result[0];
+  if (fault?.mode === "blank_reply" && result[0] === 200) {
+    // The model answered, but with no usable reply text.
+    try {
+      const msg = result[1].choices[0].message;
+      const parsed = JSON.parse(msg.content);
+      parsed.proposed_reply = "Best regards,";
+      msg.content = JSON.stringify(parsed);
+    } catch {}
+  }
   if (fault?.mode === "drop_after_commit") {
     // The write happened; the caller never learns it.
     entry.dropped = true;
@@ -238,7 +263,12 @@ function route(method, path, url, body) {
 
   if ((m = path.match(/^\/crm\/v4\/objects\/contacts\/(\d+)\/associations\/tasks$/)) && method === "GET") {
     const ids = [...(state.assoc.get(m[1]) || [])];
-    return [200, { results: ids.map((id) => ({ toObjectId: Number(id), associationTypes: [{ category: "HUBSPOT_DEFINED", typeId: 204, label: null }] })) }];
+    const limit = Math.max(1, Math.min(500, Number(url.searchParams.get("limit") || 500)));
+    const after = Number(url.searchParams.get("after") || 0);
+    const page = ids.slice(after, after + limit);
+    const out = { results: page.map((id) => ({ toObjectId: Number(id), associationTypes: [{ category: "HUBSPOT_DEFINED", typeId: 204, label: null }] })) };
+    if (after + limit < ids.length) out.paging = { next: { after: String(after + limit) } };
+    return [200, out];
   }
 
   if (method === "POST" && path === "/crm/v3/objects/tasks/batch/read") {

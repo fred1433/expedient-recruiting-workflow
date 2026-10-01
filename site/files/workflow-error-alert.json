@@ -1,0 +1,62 @@
+{
+  "id": "ExpInqErrAlert01",
+  "name": "Physician inquiry: workflow error alert",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "n001-workflow-failed",
+      "name": "Workflow failed",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALERT_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: 'Physician inquiry workflow: \"' + $json.workflow.name + '\" failed at node \"' + ($json.execution.lastNodeExecuted || 'unknown') + '\" (execution ' + $json.execution.id + '): ' + String(($json.execution.error && $json.execution.error.message) || '').slice(0, 160) }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "n002-send-workflow-alert",
+      "name": "Send workflow alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        180
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Workflow failed": {
+      "main": [
+        [
+          {
+            "node": "Send workflow alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

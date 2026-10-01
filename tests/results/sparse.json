@@ -1,6 +1,6 @@
 {
   "id": "sparse",
-  "started": "2026-10-01T19:21:02.145Z",
+  "started": "2026-10-01T20:12:30.022Z",
   "n8n": "2.42.2",
   "checks": [
     {
@@ -12,19 +12,23 @@
       "ok": true
     },
     {
-      "label": "everything else left as not stated",
+      "label": "specialty, states, certification, intent and call window all left as not stated",
       "ok": true
     },
     {
-      "label": "still one review task, with a reply asking for the basics",
+      "label": "one review task whose reply asks for specialty, licensed states and QME status",
       "ok": true
     },
     {
-      "label": "proposed reply signed [Your name], Expedient recruiting",
+      "label": "every proposed reply has at least two sentences of content",
       "ok": true
     },
     {
-      "label": "proposed reply does not ask for phone, email or name",
+      "label": "every proposed reply is signed [Your name], Expedient recruiting",
+      "ok": true
+    },
+    {
+      "label": "no proposed reply asks for phone, email or name",
       "ok": true
     }
   ],
@@ -34,14 +38,14 @@
       "properties": {
         "hs_object_id": "1000",
         "email": "mbell.do@example.test",
-        "first_conversion_date": "2026-10-01T19:21:02.235Z",
-        "createdate": "2026-10-01T19:21:02.235Z",
+        "first_conversion_date": "2026-10-01T20:12:30.095Z",
+        "createdate": "2026-10-01T20:12:30.095Z",
         "firstname": "Marcus",
         "lastname": "Bell",
-        "physician_credentials": "DO",
+        "physician_credentials": "D.O.",
         "phone": "(555) 010-7781",
         "message": "Interested.",
-        "recent_conversion_date": "2026-10-01T19:21:02.235Z",
+        "recent_conversion_date": "2026-10-01T20:12:30.095Z",
         "recent_conversion_event_name": "Join Expedient",
         "ai_inquiry_specialty": "not stated",
         "ai_inquiry_license_states": "not stated",
@@ -50,10 +54,10 @@
         "ai_inquiry_call_availability": "not stated",
         "ai_inquiry_review_status": "needs_information",
         "ai_inquiry_flags": "no_model_call:message_too_short",
-        "ai_inquiry_ref": "1000:1790882462235"
+        "ai_inquiry_ref": "1000:1790885550095"
       },
-      "createdAt": "2026-10-01T19:21:02.235Z",
-      "updatedAt": "2026-10-01T19:21:02.375Z"
+      "createdAt": "2026-10-01T20:12:30.095Z",
+      "updatedAt": "2026-10-01T20:12:30.284Z"
     }
   ],
   "tasks": [
@@ -61,17 +65,17 @@
       "id": "1001",
       "properties": {
         "hs_object_id": "1001",
-        "hs_createdate": "2026-10-01T19:21:02.426Z",
-        "hs_task_subject": "Physician inquiry: Marcus Bell, DO (review and reply)",
-        "hs_task_body": "<p><b>Needs information</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>Interested.</p><p><b>Suggested reading, from their own words</b><br>Specialty: <i>not stated</i><br>Licensed in: <i>not stated</i><br>Certification: not stated<br>Looking for: unclear<br>Available for a first call: <i>not stated</i> (a call window, not evaluation capacity)</p><p><b>To clarify</b><br>The message is empty or too short to interpret.</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Bell,<br><br>Thank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, where you are licensed, and whether you are already a QME or exploring certification?<br><br>Best regards,<br>[Your name], Expedient recruiting</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790882462235</p>",
+        "hs_createdate": "2026-10-01T20:12:30.329Z",
+        "hs_task_subject": "Physician inquiry: Marcus Bell, D.O. (review and reply)",
+        "hs_task_body": "<p><b>Needs information</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>Interested.</p><p><b>Suggested reading, from their own words</b><br>Specialty: <i>not stated</i><br>Licensed in: <i>not stated</i><br>Certification: not stated<br>Looking for: unclear<br>Available for a first call: <i>not stated</i> (a call window, not evaluation capacity)</p><p><b>To clarify</b><br>The message is empty or too short to interpret.</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Bell,<br><br>Thank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, the states where you are licensed, and whether you are already a QME or exploring QME certification?<br><br>Best regards,<br>[Your name], Expedient recruiting</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790885550095</p>",
         "hs_task_status": "NOT_STARTED",
         "hs_task_priority": "MEDIUM",
         "hs_task_type": "TODO",
         "hs_timestamp": "2026-10-02T17:00:00.000Z",
         "hubspot_owner_id": "900001"
       },
-      "createdAt": "2026-10-01T19:21:02.426Z",
-      "updatedAt": "2026-10-01T19:21:02.426Z"
+      "createdAt": "2026-10-01T20:12:30.329Z",
+      "updatedAt": "2026-10-01T20:12:30.329Z"
     }
   ],
   "assoc": {
@@ -83,31 +87,31 @@
   "modelCalls": [],
   "http": [
     {
-      "at": "2026-10-01T19:21:02.277Z",
+      "at": "2026-10-01T20:12:30.156Z",
       "method": "POST",
       "path": "/crm/v3/objects/contacts/search",
       "status": 200
     },
     {
-      "at": "2026-10-01T19:21:02.335Z",
+      "at": "2026-10-01T20:12:30.235Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "status": 200
     },
     {
-      "at": "2026-10-01T19:21:02.375Z",
+      "at": "2026-10-01T20:12:30.284Z",
       "method": "PATCH",
       "path": "/crm/v3/objects/contacts/1000",
       "status": 200
     },
     {
-      "at": "2026-10-01T19:21:02.396Z",
+      "at": "2026-10-01T20:12:30.306Z",
       "method": "GET",
       "path": "/crm/v4/objects/contacts/1000/associations/tasks",
       "status": 200
     },
     {
-      "at": "2026-10-01T19:21:02.426Z",
+      "at": "2026-10-01T20:12:30.329Z",
       "method": "POST",
       "path": "/crm/v3/objects/tasks",
       "status": 201
@@ -115,7 +119,7 @@
   ],
   "ledger": [
     {
-      "submission_key": "1000:1790882462235",
+      "submission_key": "1000:1790885550095",
       "status": "done",
       "attempts": 1,
       "suggestions_written": true,
@@ -123,41 +127,91 @@
       "task_action": "created",
       "last_step": "done",
       "last_error": null,
-      "alerted": false
+      "alerted": false,
+      "alert_attempts": 0,
+      "payload": {
+        "message": "Interested.",
+        "lastName": "Bell",
+        "firstName": "Marcus",
+        "credentials": "D.O."
+      },
+      "model_result": {
+        "flags": [
+          "no_model_call:message_too_short"
+        ],
+        "intent": {
+          "value": "unclear",
+          "evidence": null
+        },
+        "source": "rules",
+        "questions": [],
+        "specialty": {
+          "value": null,
+          "evidence": null
+        },
+        "ambiguities": [
+          "The message is empty or too short to interpret."
+        ],
+        "review_status": "needs_information",
+        "license_states": {
+          "value": null,
+          "evidence": null
+        },
+        "proposed_reply": "Dear Dr. Bell,\n\nThank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, the states where you are licensed, and whether you are already a QME or exploring QME certification?\n\nBest regards,\n[Your name], Expedient recruiting",
+        "call_availability": {
+          "value": null,
+          "evidence": null
+        },
+        "states_not_licensed": {
+          "value": null,
+          "evidence": null
+        },
+        "certification_statement": {
+          "value": "not_stated",
+          "evidence": null
+        }
+      }
     }
   ],
   "events": [
     {
-      "at": "19:21:02.290",
-      "submission_key": "1000:1790882462235",
+      "at": "20:12:30.170",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:12:30.170",
+      "submission_key": "1000:1790885550095",
       "step": "poll",
       "outcome": "recorded",
       "detail": null
     },
     {
-      "at": "19:21:02.295",
-      "submission_key": "1000:1790882462235",
+      "at": "20:12:30.177",
+      "submission_key": "1000:1790885550095",
       "step": "claim",
       "outcome": "attempt 1",
       "detail": null
     },
     {
-      "at": "19:21:02.352",
-      "submission_key": "1000:1790882462235",
+      "at": "20:12:30.268",
+      "submission_key": "1000:1790885550095",
       "step": "interpret",
       "outcome": "saved",
       "detail": "rules:needs_information"
     },
     {
-      "at": "19:21:02.383",
-      "submission_key": "1000:1790882462235",
+      "at": "20:12:30.291",
+      "submission_key": "1000:1790885550095",
       "step": "suggestions",
       "outcome": "written",
       "detail": null
     },
     {
-      "at": "19:21:02.442",
-      "submission_key": "1000:1790882462235",
+      "at": "20:12:30.340",
+      "submission_key": "1000:1790885550095",
       "step": "task",
       "outcome": "done",
       "detail": "created 1001"
@@ -165,18 +219,18 @@
   ],
   "executions": [
     {
-      "id": 523,
+      "id": 740,
       "workflow": "Physician inquiry: poll HubSpot form submissions",
       "status": "success",
-      "started": "19:21:02",
-      "stopped": "19:21:02"
+      "started": "20:12:30",
+      "stopped": "20:12:30"
     },
     {
-      "id": 524,
+      "id": 741,
       "workflow": "Physician inquiry: process one submission",
       "status": "success",
-      "started": "19:21:02",
-      "stopped": "19:21:02"
+      "started": "20:12:30",
+      "stopped": "20:12:30"
     }
   ]
 }

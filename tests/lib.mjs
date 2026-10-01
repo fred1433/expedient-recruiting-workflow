@@ -60,7 +60,7 @@ export function resetLedger() {
   sqlExec(`truncate recruiting.inquiry_ledger, recruiting.event_log; update recruiting.poll_state set checkpoint = now() - interval '1 day'; delete from execution_entity;`);
 }
 
-export const ledger = () => sql(`select submission_key, status, attempts, suggestions_written, task_id, task_action, last_step, last_error, alerted_at is not null as alerted from recruiting.inquiry_ledger order by conversion_at`);
+export const ledger = () => sql(`select submission_key, status, attempts, suggestions_written, task_id, task_action, last_step, last_error, alerted_at is not null as alerted, alert_attempts, payload, model_result from recruiting.inquiry_ledger order by conversion_at`);
 export const events = () => sql(`select to_char(at, 'HH24:MI:SS.MS') as at, submission_key, step, outcome, detail from recruiting.event_log order by id`);
 export const executions = () => sql(`select e.id, w.name as workflow, e.status, to_char(e."startedAt", 'HH24:MI:SS') as started, to_char(e."stoppedAt", 'HH24:MI:SS') as stopped from execution_entity e join workflow_entity w on w.id = e."workflowId" order by e.id`);
 export { env };

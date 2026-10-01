@@ -1,0 +1,375 @@
+{
+  "id": "staleWorker",
+  "started": "2026-10-01T20:15:53.446Z",
+  "n8n": "2.42.2",
+  "checks": [
+    {
+      "label": "a second attempt took over after the first one's lease expired",
+      "ok": true
+    },
+    {
+      "label": "the stalled attempt stopped when it woke up, without writing",
+      "ok": true
+    },
+    {
+      "label": "one contact update and one task: the stalled attempt wrote nothing to HubSpot",
+      "ok": true
+    },
+    {
+      "label": "every proposed reply has at least two sentences of content",
+      "ok": true
+    },
+    {
+      "label": "every proposed reply is signed [Your name], Expedient recruiting",
+      "ok": true
+    },
+    {
+      "label": "no proposed reply asks for phone, email or name",
+      "ok": true
+    }
+  ],
+  "contacts": [
+    {
+      "id": "1000",
+      "properties": {
+        "hs_object_id": "1000",
+        "email": "dokoye@example.test",
+        "first_conversion_date": "2026-10-01T20:15:53.521Z",
+        "createdate": "2026-10-01T20:15:53.521Z",
+        "firstname": "Daniel",
+        "lastname": "Okoye",
+        "physician_credentials": "M.D.",
+        "phone": "(555) 010-4410",
+        "message": "I'm an orthopedic surgeon. I've been a QME since 2019 and I'm licensed in California. I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations. Email is the best way to reach me.",
+        "recent_conversion_date": "2026-10-01T20:15:53.521Z",
+        "recent_conversion_event_name": "Join Expedient",
+        "ai_inquiry_specialty": "orthopedic surgeon",
+        "ai_inquiry_license_states": "CA",
+        "ai_inquiry_certification_statement": "says_certified_qme",
+        "ai_inquiry_intent": "unclear",
+        "ai_inquiry_call_availability": "not stated",
+        "ai_inquiry_review_status": "needs_clarification",
+        "ai_inquiry_flags": "unsupported:intent (quote does not support established_qme_joining)",
+        "ai_inquiry_ref": "1000:1790885753521"
+      },
+      "createdAt": "2026-10-01T20:15:53.521Z",
+      "updatedAt": "2026-10-01T20:16:46.658Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "1001",
+      "properties": {
+        "hs_object_id": "1001",
+        "hs_createdate": "2026-10-01T20:16:46.734Z",
+        "hs_task_subject": "Physician inquiry: Daniel Okoye, M.D. (review and reply)",
+        "hs_task_body": "<p><b>Needs clarification</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>I'm an orthopedic surgeon. I've been a QME since 2019 and I'm licensed in California. I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations. Email is the best way to reach me.</p><p><b>Suggested reading, from their own words</b><br>Specialty: orthopedic surgeon <span style=\"color:#666\">(\"I'm an orthopedic surgeon\")</span><br>Licensed in: CA <span style=\"color:#666\">(\"I'm licensed in California\")</span><br>Certification: says they are a certified QME <span style=\"color:#666\">(\"I've been a QME since 2019\")</span><br>Looking for: unclear<br>Available for a first call: <i>not stated</i> (a call window, not evaluation capacity)</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Okoye,<br><br>Thank you for reaching out. It sounds like you’re an established QME and are looking for support with scheduling and report logistics, which is exactly the kind of conversation we’d be glad to have.<br><br>If you’re open to it, we can set up a first call to learn more about what you’re looking for and share how our process works. If there are any preferred days or times for a call, please send them along and we’ll do our best to coordinate.<br><br>Best regards,<br>[Your name], Expedient recruiting</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790885753521</p>",
+        "hs_task_status": "NOT_STARTED",
+        "hs_task_priority": "MEDIUM",
+        "hs_task_type": "TODO",
+        "hs_timestamp": "2026-10-02T17:00:00.000Z",
+        "hubspot_owner_id": "900001"
+      },
+      "createdAt": "2026-10-01T20:16:46.734Z",
+      "updatedAt": "2026-10-01T20:16:46.734Z"
+    }
+  ],
+  "assoc": {
+    "1000": [
+      "1001"
+    ]
+  },
+  "alerts": [],
+  "modelCalls": [
+    {
+      "at": "2026-10-01T20:16:42.722Z",
+      "mode": "proxy",
+      "model": "gpt-5.4-mini-2026-03-17",
+      "fieldsSent": [
+        "credentials",
+        "message",
+        "known_to_team",
+        "previously_stated"
+      ],
+      "bytesSent": 301,
+      "status": 200,
+      "ms": 3849,
+      "content": "{\n  \"specialty\": {\n    \"value\": \"orthopedic surgeon\",\n    \"evidence\": \"I'm an orthopedic surgeon.\"\n  },\n  \"license_states\": {\n    \"value\": [\n      \"CA\"\n    ],\n    \"evidence\": \"I'm licensed in California.\"\n  },\n  \"states_not_licensed\": {\n    \"value\": null,\n    \"evidence\": null\n  },\n  \"certification_statement\": {\n    \"value\": \"says_certified_qme\",\n    \"evidence\": \"I've been a QME since 2019\"\n  },\n  \"intent\": {\n    \"value\": \"established_qme_joining\",\n    \"evidence\": \"I'm looking at groups that handle scheduling and report logistics\"\n  },\n  \"call_availability\": {\n    \"value\": null,\n    \"evidence\": null\n  },\n  \"questions\": [],\n  \"ambiguities\": [],\n  \"proposed_reply\": \"Hello,\\n\\nThank you for reaching out. It sounds like you’re an established QME and are looking for support with scheduling and report logistics, which is exactly the kind of conversation we’d be glad to have.\\n\\nIf you’re open to it, we can set up a first call to learn more about what you’re looking for and share how our process works. If there are any preferred days or times for a call, please send them along and we’ll do our best to coordinate.\\n\\nBest regards,\"\n}",
+      "servedModel": "gpt-5.4-mini-2026-03-17",
+      "usage": {
+        "prompt_tokens": 1259,
+        "completion_tokens": 371,
+        "total_tokens": 1630,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 57,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    },
+    {
+      "at": "2026-10-01T20:16:47.705Z",
+      "mode": "proxy",
+      "model": "gpt-5.4-mini-2026-03-17",
+      "fieldsSent": [
+        "credentials",
+        "message",
+        "known_to_team",
+        "previously_stated"
+      ],
+      "bytesSent": 301,
+      "status": 200,
+      "ms": 3100,
+      "content": "{\n  \"specialty\": {\n    \"value\": \"orthopedic surgeon\",\n    \"evidence\": \"I'm an orthopedic surgeon.\"\n  },\n  \"license_states\": {\n    \"value\": [\n      \"CA\"\n    ],\n    \"evidence\": \"I'm licensed in California.\"\n  },\n  \"states_not_licensed\": {\n    \"value\": null,\n    \"evidence\": null\n  },\n  \"certification_statement\": {\n    \"value\": \"says_certified_qme\",\n    \"evidence\": \"I've been a QME since 2019\"\n  },\n  \"intent\": {\n    \"value\": \"established_qme_joining\",\n    \"evidence\": \"I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations.\"\n  },\n  \"call_availability\": {\n    \"value\": null,\n    \"evidence\": null\n  },\n  \"questions\": [],\n  \"ambiguities\": [],\n  \"proposed_reply\": \"Hello,\\n\\nThank you for reaching out. It sounds like you are an established QME and are exploring a group that can help with scheduling and report logistics.\\n\\nWe would be glad to have an initial conversation to learn more about your practice and what kind of support you are looking for.\\n\\nBest regards,\"\n}",
+      "servedModel": "gpt-5.4-mini-2026-03-17",
+      "usage": {
+        "prompt_tokens": 1259,
+        "completion_tokens": 348,
+        "total_tokens": 1607,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 68,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    }
+  ],
+  "http": [
+    {
+      "at": "2026-10-01T20:15:53.586Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:15:53.662Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:15:53.705Z",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "fault": "delay",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:16:42.613Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:16:42.692Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:16:42.721Z",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:16:46.658Z",
+      "method": "PATCH",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:16:46.689Z",
+      "method": "GET",
+      "path": "/crm/v4/objects/contacts/1000/associations/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:16:46.734Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/tasks",
+      "status": 201
+    },
+    {
+      "at": "2026-10-01T20:16:54.065Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    }
+  ],
+  "ledger": [
+    {
+      "submission_key": "1000:1790885753521",
+      "status": "done",
+      "attempts": 2,
+      "suggestions_written": true,
+      "task_id": "1001",
+      "task_action": "created",
+      "last_step": "done",
+      "last_error": null,
+      "alerted": false,
+      "alert_attempts": 0,
+      "payload": {
+        "message": "I'm an orthopedic surgeon. I've been a QME since 2019 and I'm licensed in California. I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations. Email is the best way to reach me.",
+        "lastName": "Okoye",
+        "firstName": "Daniel",
+        "credentials": "M.D."
+      },
+      "model_result": {
+        "flags": [
+          "unsupported:intent (quote does not support established_qme_joining)"
+        ],
+        "intent": {
+          "value": "unclear",
+          "evidence": null
+        },
+        "source": "model",
+        "questions": [],
+        "specialty": {
+          "value": "orthopedic surgeon",
+          "evidence": "I'm an orthopedic surgeon"
+        },
+        "ambiguities": [],
+        "review_status": "needs_clarification",
+        "license_states": {
+          "value": [
+            "CA"
+          ],
+          "evidence": "I'm licensed in California"
+        },
+        "proposed_reply": "Dear Dr. Okoye,\n\nThank you for reaching out. It sounds like you’re an established QME and are looking for support with scheduling and report logistics, which is exactly the kind of conversation we’d be glad to have.\n\nIf you’re open to it, we can set up a first call to learn more about what you’re looking for and share how our process works. If there are any preferred days or times for a call, please send them along and we’ll do our best to coordinate.\n\nBest regards,\n[Your name], Expedient recruiting",
+        "call_availability": {
+          "value": null,
+          "evidence": null
+        },
+        "states_not_licensed": {
+          "value": null,
+          "evidence": null
+        },
+        "certification_statement": {
+          "value": "says_certified_qme",
+          "evidence": "I've been a QME since 2019"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "at": "20:15:53.603",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:15:53.604",
+      "submission_key": "1000:1790885753521",
+      "step": "poll",
+      "outcome": "recorded",
+      "detail": null
+    },
+    {
+      "at": "20:15:53.610",
+      "submission_key": "1000:1790885753521",
+      "step": "claim",
+      "outcome": "attempt 1",
+      "detail": null
+    },
+    {
+      "at": "20:16:42.628",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:16:42.634",
+      "submission_key": "1000:1790885753521",
+      "step": "claim",
+      "outcome": "attempt 2",
+      "detail": null
+    },
+    {
+      "at": "20:16:46.596",
+      "submission_key": "1000:1790885753521",
+      "step": "interpret",
+      "outcome": "saved",
+      "detail": "model:needs_clarification"
+    },
+    {
+      "at": "20:16:46.672",
+      "submission_key": "1000:1790885753521",
+      "step": "suggestions",
+      "outcome": "written",
+      "detail": null
+    },
+    {
+      "at": "20:16:46.748",
+      "submission_key": "1000:1790885753521",
+      "step": "task",
+      "outcome": "done",
+      "detail": "created 1001"
+    },
+    {
+      "at": "20:16:50.836",
+      "submission_key": "1000:1790885753521",
+      "step": "lease",
+      "outcome": "lost",
+      "detail": "another attempt owns this submission; this one stopped without writing"
+    },
+    {
+      "at": "20:16:54.085",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    }
+  ],
+  "executions": [
+    {
+      "id": 779,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:15:53",
+      "stopped": "20:16:50"
+    },
+    {
+      "id": 780,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "success",
+      "started": "20:15:53",
+      "stopped": "20:16:50"
+    },
+    {
+      "id": 781,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:16:42",
+      "stopped": "20:16:46"
+    },
+    {
+      "id": 782,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "success",
+      "started": "20:16:42",
+      "stopped": "20:16:46"
+    },
+    {
+      "id": 783,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:16:54",
+      "stopped": "20:16:54"
+    }
+  ]
+}

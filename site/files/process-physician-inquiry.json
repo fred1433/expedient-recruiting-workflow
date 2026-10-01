@@ -17,7 +17,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Mapping table: everything specific to your portal lives here.\n// Left: role in this workflow. Right: HubSpot internal property name.\nconst cfg = {\n  hubspotBase: $env.HUBSPOT_BASE_URL,\n  modelBase: $env.MODEL_BASE_URL,\n  model: $env.MODEL_NAME,                       // one provider, no fallback\n  recruitingOwnerId: $env.RECRUITING_OWNER_ID,  // who receives the review task\n  maxAttempts: Number($env.MAX_ATTEMPTS || 5),\n  retryBaseSeconds: Number($env.RETRY_BASE_SECONDS || 30),\n  props: {\n    firstName: 'firstname',\n    lastName: 'lastname',\n    credentials: 'physician_credentials',       // \"Credentials\" field of the join form\n    message: 'message',                         // free-text field of the join form\n    verifiedQmeStatus: 'expedient_qme_status_verified', // set by staff only, never written here\n    sugSpecialty: 'ai_inquiry_specialty',\n    sugLicenseStates: 'ai_inquiry_license_states',\n    sugCertification: 'ai_inquiry_certification_statement',\n    sugIntent: 'ai_inquiry_intent',\n    sugCallWindow: 'ai_inquiry_call_availability',\n    sugReviewStatus: 'ai_inquiry_review_status',\n    sugFlags: 'ai_inquiry_flags',\n    sugRef: 'ai_inquiry_ref',\n  },\n  // The ONLY contact fields sent to the model. Name, email, phone, owner, history,\n  // notes and attachments never leave HubSpot.\n  modelFields: ['credentials', 'message'],\n  taskMarker: 'expedient-inquiry-review',\n  dueHourPacific: 10,\n};\nreturn [{ json: { ...$input.first().json, cfg } }];"
+        "jsCode": "// Mapping table: everything specific to your portal lives here.\n// Left: role in this workflow. Right: HubSpot internal property name.\nconst cfg = {\n  hubspotBase: $env.HUBSPOT_BASE_URL,\n  modelBase: $env.MODEL_BASE_URL,\n  model: $env.MODEL_NAME,                       // one provider, no fallback\n  recruitingOwnerId: $env.RECRUITING_OWNER_ID,  // who receives the review task\n  maxAttempts: Number($env.MAX_ATTEMPTS || 5),\n  retryBaseSeconds: Number($env.RETRY_BASE_SECONDS || 30),\n  leaseSeconds: Number($env.LEASE_SECONDS || 300),\n  assocPageSize: Number($env.ASSOC_PAGE_SIZE || 100),\n  props: {\n    firstName: 'firstname',\n    lastName: 'lastname',\n    credentials: 'physician_credentials',       // \"Credentials\" select of the join form\n    message: 'message',                         // free-text field of the join form\n    verifiedQmeStatus: 'expedient_qme_status_verified', // set by staff only, never written here\n    sugSpecialty: 'ai_inquiry_specialty',\n    sugLicenseStates: 'ai_inquiry_license_states',\n    sugCertification: 'ai_inquiry_certification_statement',\n    sugIntent: 'ai_inquiry_intent',\n    sugCallWindow: 'ai_inquiry_call_availability',\n    sugReviewStatus: 'ai_inquiry_review_status',\n    sugFlags: 'ai_inquiry_flags',\n    sugRef: 'ai_inquiry_ref',\n  },\n  // Sent to the model: these two submission fields, a yes/no flag and what the physician's own\n  // earlier inquiries already said. The free text is NOT de-identified (see README).\n  modelFields: ['credentials', 'message'],\n  taskMarker: 'expedient-inquiry-review',\n  dueHourLocal: 10,\n  timeZone: 'America/Los_Angeles',\n};\nreturn [{ json: { ...$input.first().json, cfg } }];\n"
       },
       "id": "n002-configuration",
       "name": "Configuration",
@@ -30,20 +30,101 @@
     },
     {
       "parameters": {
+        "operation": "executeQuery",
+        "query": "with u as (\n  update recruiting.inquiry_ledger set lease_until = now() + make_interval(secs => $3), updated_at = now()\n   where submission_key = $1 and lease_token = $2::uuid and status = 'processing'\n  returning 1)\nselect exists (select 1 from u) as owner",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $('Configuration').first().json.lease_token, $('Configuration').first().json.cfg.leaseSeconds ] }}"
+        }
+      },
+      "id": "n003-take-the-lease",
+      "name": "Take the lease",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        520,
+        360
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (recruiting ledger)"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.owner === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n004-owner-at-start-",
+      "name": "Owner at start?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "insert into recruiting.event_log (submission_key, step, outcome, detail)\nvalues ($1, 'lease', 'lost', 'another attempt owns this submission; this one stopped without writing') returning id",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key ] }}"
+        }
+      },
+      "id": "n005-lease-lost",
+      "name": "Lease lost",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1040,
+        900
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (recruiting ledger)"
+        }
+      }
+    },
+    {
+      "parameters": {
         "method": "GET",
-        "url": "={{ $json.cfg.hubspotBase }}/crm/v3/objects/contacts/{{ $json.contact_id }}?properties={{ Object.values($json.cfg.props).concat(['hubspot_owner_id','lifecyclestage']).join(',') }}",
+        "url": "={{ $('Configuration').first().json.cfg.hubspotBase }}/crm/v3/objects/contacts/{{ $('Configuration').first().json.contact_id }}?properties={{ [$('Configuration').first().json.cfg.props.verifiedQmeStatus, 'hubspot_owner_id', 'lifecyclestage'].join(',') }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "hubspotAppToken",
         "options": {
           "timeout": 20000
         }
       },
-      "id": "n003-read-contact",
+      "id": "n006-read-contact",
       "name": "Read contact",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        520,
+        1040,
         360
       ],
       "credentials": {
@@ -59,14 +140,96 @@
     },
     {
       "parameters": {
-        "jsCode": "const start = $('Configuration').first().json;\nconst cfg = start.cfg, P = cfg.props;\nconst p = $input.first().json.properties || {};\nconst contact = {\n  id: String($input.first().json.id),\n  firstName: p[P.firstName] || '',\n  lastName: p[P.lastName] || '',\n  credentials: (p[P.credentials] || '').trim(),\n  message: (p[P.message] || '').trim(),\n  verifiedQmeStatus: p[P.verifiedQmeStatus] || null,\n  ownerId: p.hubspot_owner_id || null,\n  lifecyclestage: p.lifecyclestage || null,\n};\n\n// Already interpreted on an earlier attempt: reuse it, never pay for the model twice.\nif (start.model_result) {\n  return [{ json: { contact, needsModel: false, reused: true, result: start.model_result } }];\n}\n\n// Too little text to interpret: plain code, no model call.\nif (contact.message.replace(/\\s+/g, ' ').length < 20) {\n  const result = {\n    specialty: { value: null, evidence: null },\n    license_states: { value: null, evidence: null },\n    certification_statement: { value: 'not_stated', evidence: null },\n    intent: { value: 'unclear', evidence: null },\n    call_availability: { value: null, evidence: null },\n    questions: [],\n    ambiguities: ['The message is empty or too short to interpret.'],\n    flags: ['no_model_call:message_too_short'],\n    review_status: 'needs_information',\n    proposed_reply: (contact.lastName ? 'Dear Dr. ' + contact.lastName : 'Hello') + ',\\n\\nThank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, where you are licensed, and whether you are already a QME or exploring certification?\\n\\nBest regards,\\n[Your name], Expedient recruiting',\n    source: 'rules',\n  };\n  return [{ json: { contact, needsModel: false, reused: false, result } }];\n}\n\nconst allowed = {};\nfor (const f of cfg.modelFields) allowed[f] = contact[f];\n// One yes/no flag, no record data: the team already knows this contact (owner or verified status set).\nallowed.known_to_team = !!(contact.verifiedQmeStatus || contact.ownerId);\n// One provider (OpenAI Chat Completions, pinned model snapshot), no fallback.\nconst modelRequest = {\n  model: cfg.model,\n  reasoning_effort: 'low',\n  max_completion_tokens: 4000,\n  response_format: { type: 'json_object' },\n  messages: [\n    { role: 'system', content: \"You read one message that a physician sent through the \\\"join us\\\" form of a California medical-legal evaluation company. The company works with Qualified Medical Evaluators (QMEs) and also helps physicians who are new to QME work. Your output helps a recruiting coordinator prepare a personal first conversation. A person reviews everything you produce; nothing is sent automatically.\\n\\nYou receive only \\\"credentials\\\" (what the physician typed in the credentials box), \\\"message\\\" (their free text) and \\\"known_to_team\\\" (true when the team already has a record for this physician; you never see that record).\\n\\nReturn one JSON object and nothing else, with exactly these keys:\\n{\\n  \\\"specialty\\\":               {\\\"value\\\": string or null, \\\"evidence\\\": exact quote or null},\\n  \\\"license_states\\\":          {\\\"value\\\": array of US state codes or null, \\\"evidence\\\": exact quote or null},\\n  \\\"certification_statement\\\": {\\\"value\\\": \\\"says_certified_qme\\\" | \\\"says_lapsed\\\" | \\\"says_in_progress\\\" | \\\"says_not_certified\\\" | \\\"not_stated\\\", \\\"evidence\\\": exact quote or null},\\n  \\\"intent\\\":                  {\\\"value\\\": \\\"explore_qme_certification\\\" | \\\"established_qme_joining\\\" | \\\"returning_qme\\\" | \\\"other\\\" | \\\"unclear\\\", \\\"evidence\\\": exact quote or null},\\n  \\\"call_availability\\\":       {\\\"value\\\": string or null, \\\"evidence\\\": exact quote or null},\\n  \\\"questions\\\":   [questions the physician asked, short],\\n  \\\"ambiguities\\\": [only what a coordinator must clarify before a useful first conversation, short; empty if nothing],\\n  \\\"proposed_reply\\\": string\\n}\\n\\nRules:\\n- Report only what the physician states. If something is not stated, use null (or \\\"not_stated\\\" / \\\"unclear\\\"). A sparse message gives a sparse result; that is correct.\\n- Every non-null value needs \\\"evidence\\\": a short quote copied word for word from the credentials or the message. The quote is one continuous piece of text: never join two separate parts of a sentence. If you cannot quote it, the value is null.\\n- certification_statement is what they say about their QME certification. intent is what they want next. Wanting or being interested in becoming a QME is intent, not a certification status: use \\\"not_stated\\\" unless they say they hold the certification, say they are actively working toward it (course taken, exam scheduled or passed, application filed), or say they are not certified. Saying they have not taken the QME course or exam yet means \\\"says_not_certified\\\", not \\\"says_in_progress\\\". A certification that lapsed or expired is \\\"says_lapsed\\\", even if they are retaking the exam; their intent is then \\\"returning_qme\\\", never \\\"established_qme_joining\\\". \\\"established_qme_joining\\\" is only for someone who says they currently hold the certification.\\n- call_availability is only when they can talk. It says nothing about capacity to perform evaluations.\\n- A physician licensed outside California is not rejected: note it in ambiguities so the coordinator can ask.\\n- ambiguities lists only a gap or a contradiction that stops the coordinator from preparing the first call (for example: no state named, intent unclear, a statement that contradicts another). Never list something the message already answers, a detail the first conversation will naturally cover, or the physician's own questions (those go in \\\"questions\\\").\\n- Do not assess eligibility, score the physician, or promise anything.\\n- proposed_reply: a short, warm email from the recruiting team that answers what they asked where possible in general terms, proposes a first conversation, and asks only for what is missing for that conversation. Always open with \\\"Hello,\\\" (the workflow adds the name; you never receive it). The team already has their name, email and phone from the form: never ask for contact details. Do not confirm or accept a specific time on the team's behalf: acknowledge when they said they are available and say the team will propose a time. Plain text, no subject line, no em dashes, end with \\\"Best regards,\\\" on its own line (the workflow adds the signature). Do not invent facts about the company, fees, timelines or acceptance. Never suggest they could perform evaluations, or work with the group in the meantime, before their certification is current. When known_to_team is true, do not ask for background the team already holds (specialty, license, certification history): answer what they asked and propose a conversation.\" },\n    { role: 'user', content: JSON.stringify(allowed) },\n  ],\n};\nreturn [{ json: { contact, needsModel: true, reused: false, modelRequest } }];"
+        "operation": "executeQuery",
+        "query": "with u as (\n  update recruiting.inquiry_ledger set lease_until = now() + make_interval(secs => $3), updated_at = now()\n   where submission_key = $1 and lease_token = $2::uuid and status = 'processing'\n  returning 1)\nselect exists (select 1 from u) as owner",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $('Configuration').first().json.lease_token, $('Configuration').first().json.cfg.leaseSeconds ] }}"
+        }
       },
-      "id": "n004-prepare-interpretation",
+      "id": "n007-still-the-owner-",
+      "name": "Still the owner?",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1300,
+        360
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (recruiting ledger)"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.owner === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n008-owner-after-reading-",
+      "name": "Owner after reading?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1560,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select model_result from recruiting.inquiry_ledger\n where contact_id = $1 and submission_key <> $2 and conversion_at < $3::timestamptz and model_result is not null\n order by conversion_at desc limit 3",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.contact_id, $('Configuration').first().json.submission_key, $('Configuration').first().json.conversion_at ] }}"
+        }
+      },
+      "id": "n009-earlier-readings",
+      "name": "Earlier readings",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1820,
+        360
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (recruiting ledger)"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Builds what the model will read, from the submission payload frozen at poll time.\n// The contact is read only for what staff maintain (verified status, owner).\nconst start = $('Configuration').first().json;\nconst cfg = start.cfg, P = cfg.props;\nconst rec = $('Read contact').first().json;\nconst p = rec.properties || {};\nconst sub = start.payload || {};\nconst contact = {\n  id: String(rec.id || start.contact_id),\n  firstName: sub.firstName || '',\n  lastName: sub.lastName || '',\n  credentials: String(sub.credentials || '').trim(),\n  message: String(sub.message || '').trim(),\n  verifiedQmeStatus: p[P.verifiedQmeStatus] || null,\n  ownerId: p.hubspot_owner_id || null,\n};\n\n// What this physician already wrote in earlier inquiries (validated readings, from the ledger).\nconst previously = {};\nfor (const it of $('Earlier readings').all()) {\n  const r = it.json && it.json.model_result;\n  if (!r) continue;\n  if (!previously.specialty && r.specialty && r.specialty.value) previously.specialty = r.specialty.value;\n  if (!previously.license_states && r.license_states && Array.isArray(r.license_states.value) && r.license_states.value.length) previously.license_states = r.license_states.value;\n}\n\n// Interpreted on an earlier attempt of THIS submission: reuse it (same frozen payload).\nif (start.model_result) {\n  return [{ json: { contact, previously, needsModel: false, reused: true, result: start.model_result } }];\n}\n\n// Too little text to interpret: plain code, no model call.\nif (contact.message.replace(/\\s+/g, ' ').length < 20) {\n  const result = {\n    specialty: { value: null, evidence: null },\n    license_states: { value: null, evidence: null },\n    states_not_licensed: { value: null, evidence: null },\n    certification_statement: { value: 'not_stated', evidence: null },\n    intent: { value: 'unclear', evidence: null },\n    call_availability: { value: null, evidence: null },\n    questions: [],\n    ambiguities: ['The message is empty or too short to interpret.'],\n    flags: ['no_model_call:message_too_short'],\n    review_status: 'needs_information',\n    proposed_reply: (contact.lastName ? 'Dear Dr. ' + contact.lastName : 'Hello') + ',\\n\\nThank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, the states where you are licensed, and whether you are already a QME or exploring QME certification?\\n\\nBest regards,\\n[Your name], Expedient recruiting',\n    source: 'rules',\n  };\n  return [{ json: { contact, previously, needsModel: false, reused: false, result } }];\n}\n\nconst input = {};\nfor (const f of cfg.modelFields) input[f] = contact[f];\ninput.known_to_team = !!contact.verifiedQmeStatus;   // staff have verified this physician's QME status\ninput.previously_stated = previously;\n// One provider (OpenAI Chat Completions, pinned model snapshot), no fallback.\nconst modelRequest = {\n  model: cfg.model,\n  reasoning_effort: 'low',\n  max_completion_tokens: 4000,\n  response_format: { type: 'json_object' },\n  messages: [\n    { role: 'system', content: \"You read one message that a physician sent through the \\\"join us\\\" form of a California medical-legal evaluation company. The company works with Qualified Medical Evaluators (QMEs) and also helps physicians who are new to QME work. Your output helps a recruiting coordinator prepare a personal first conversation. A person reviews everything you produce; nothing is sent automatically.\\n\\nYou receive:\\n- \\\"credentials\\\": the degree the physician picked in the form's select box (for example M.D. or D.O.);\\n- \\\"message\\\": their free text;\\n- \\\"known_to_team\\\": true when staff have already verified this physician's QME status (you never see that record);\\n- \\\"previously_stated\\\": what this physician wrote in earlier inquiries, already checked (specialty, license states), or an empty object.\\n\\nReturn one JSON object and nothing else, with exactly these keys:\\n{\\n  \\\"specialty\\\":               {\\\"value\\\": string or null, \\\"evidence\\\": exact quote or null},\\n  \\\"license_states\\\":          {\\\"value\\\": array of two-letter US state codes or null, \\\"evidence\\\": exact quote or null},\\n  \\\"states_not_licensed\\\":     {\\\"value\\\": array of two-letter US state codes or null, \\\"evidence\\\": exact quote or null},\\n  \\\"certification_statement\\\": {\\\"value\\\": \\\"says_certified_qme\\\" | \\\"says_lapsed\\\" | \\\"says_in_progress\\\" | \\\"says_not_certified\\\" | \\\"not_stated\\\", \\\"evidence\\\": exact quote or null},\\n  \\\"intent\\\":                  {\\\"value\\\": \\\"explore_qme_certification\\\" | \\\"established_qme_joining\\\" | \\\"returning_qme\\\" | \\\"other\\\" | \\\"unclear\\\", \\\"evidence\\\": exact quote or null},\\n  \\\"call_availability\\\":       {\\\"value\\\": string or null, \\\"evidence\\\": exact quote or null},\\n  \\\"questions\\\":   [questions the physician asked, short],\\n  \\\"ambiguities\\\": [only what a coordinator must clarify before a useful first conversation, short; empty if nothing],\\n  \\\"proposed_reply\\\": string\\n}\\n\\nRules:\\n- Report only what the physician states in this message. If something is not stated, use null (or \\\"not_stated\\\" / \\\"unclear\\\"). A sparse message gives a sparse result; that is correct.\\n- Every non-null value needs \\\"evidence\\\": a short quote copied word for word from the message. The quote is one continuous piece of text that itself supports the value: never join two separate parts of a sentence. If you cannot quote it, the value is null.\\n- license_states: only states they say they are licensed in. states_not_licensed: states they say they are not (or not yet) licensed in. \\\"not licensed in California yet\\\" is states_not_licensed [\\\"CA\\\"], never \\\"not stated\\\".\\n- certification_statement is what they say about their QME certification. intent is what they want next. Wanting or being interested in becoming a QME is intent, not a certification status: use \\\"not_stated\\\" unless they say they hold the certification, say they are actively working toward it (course taken, exam scheduled or passed, application filed), or say they are not certified. Saying they are not a QME yet, or have not taken the course, is \\\"says_not_certified\\\". A certification that lapsed or expired is \\\"says_lapsed\\\", even if they are retaking the exam; their intent is then \\\"returning_qme\\\", never \\\"established_qme_joining\\\". \\\"established_qme_joining\\\" is only for someone who says they currently hold the certification.\\n- intent \\\"explore_qme_certification\\\" only when they say they want to become a QME, start QME work or get certified. Asking in general what the company offers is \\\"other\\\" or \\\"unclear\\\".\\n- call_availability is only a time window for a call: days, times of day. A preferred channel (\\\"email is best\\\") is not availability: leave it null. It says nothing about capacity to perform evaluations.\\n- A physician licensed outside California is not rejected: note in ambiguities what the coordinator should ask.\\n- ambiguities lists only a gap or a contradiction that stops the coordinator from preparing the first call (for example: no state named, intent unclear, a statement that contradicts another). Never list something the message or previously_stated already answers, a detail the first conversation will naturally cover, or the physician's own questions (those go in \\\"questions\\\").\\n- Do not assess eligibility, score the physician, or promise anything.\\n- proposed_reply: a short, warm email from the recruiting team that answers what they asked where possible in general terms, proposes a first conversation, and asks only for what is missing for that conversation. Always open with \\\"Hello,\\\" (the workflow adds the name; you never receive it). The team already has their name, email and phone from the form: never ask for contact details. Never ask for something the message or previously_stated already says (for example a state they already named, or whether they hold a California license when they said they do not). Do not confirm or accept a specific time on the team's behalf: acknowledge when they said they are available and say the team will propose a time. Plain text, no subject line, no em dashes, end with \\\"Best regards,\\\" on its own line (the workflow adds the signature). Do not invent facts about the company, fees, timelines or acceptance. Never suggest they could perform evaluations, or work with the group in the meantime, before their certification is current. When known_to_team is true, do not ask for background the team already holds (specialty, license, certification history): answer what they asked and propose a conversation.\" },\n    { role: 'user', content: JSON.stringify(input) },\n  ],\n};\nreturn [{ json: { contact, previously, needsModel: true, reused: false, modelRequest } }];\n"
+      },
+      "id": "n010-prepare-interpretation",
       "name": "Prepare interpretation",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        780,
+        2080,
         360
       ]
     },
@@ -95,12 +258,12 @@
         },
         "options": {}
       },
-      "id": "n005-model-needed-",
+      "id": "n011-model-needed-",
       "name": "Model needed?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1040,
+        2340,
         360
       ]
     },
@@ -117,12 +280,12 @@
           "timeout": 60000
         }
       },
-      "id": "n006-ask-the-model",
+      "id": "n012-ask-the-model",
       "name": "Ask the model",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1300,
+        2600,
         180
       ],
       "credentials": {
@@ -138,31 +301,32 @@
     },
     {
       "parameters": {
-        "jsCode": "// The model proposes; this code checks. Any value whose quoted evidence is not found\n// word for word in what the physician wrote is dropped and flagged.\nconst prep = $('Prepare interpretation').first().json;\nconst c = prep.contact;\nconst flags = [];\nlet raw = ((($input.first().json.choices || [])[0] || {}).message || {}).content || '';\nraw = raw.replace(/^\\s*```(?:json)?\\s*/i, '').replace(/```\\s*$/, '');\nlet m;\ntry { m = JSON.parse(raw); } catch (e) { throw new Error('Model reply is not valid JSON'); }\n\nconst norm = s => String(s || '').toLowerCase().replace(/[\\u2018\\u2019]/g, \"'\").replace(/[\\u201c\\u201d]/g, '\"').replace(/\\s+/g, ' ').trim();\nconst source = norm(c.message + ' ' + c.credentials);\nconst field = (name, allowed, fallback) => {\n  const f = m[name] || {};\n  let value = f.value ?? null, evidence = f.evidence ?? null;\n  if (allowed && !allowed.includes(value)) { flags.push('invalid_value:' + name); value = fallback; evidence = null; }\n  const empty = value === null || value === fallback || (Array.isArray(value) && value.length === 0);\n  if (!empty) {\n    // Tolerate the quote marks and final period a model sometimes wraps a quote in; nothing else.\n    const q = norm(evidence).replace(/^[\"']+|[\"'.]+$/g, '').trim();\n    if (!evidence || !q || !source.includes(q)) { flags.push('unsupported:' + name); value = fallback; evidence = null; }\n  }\n  // Store the quote without the quote marks a model sometimes adds around it.\n  if (evidence) evidence = String(evidence).trim().replace(/^[\"'“‘]+|[\"'”’]+$/g, '');\n  return { value, evidence };\n};\nconst result = {\n  specialty: field('specialty', null, null),\n  license_states: field('license_states', null, null),\n  certification_statement: field('certification_statement', ['says_certified_qme', 'says_lapsed', 'says_in_progress', 'says_not_certified', 'not_stated'], 'not_stated'),\n  intent: field('intent', ['explore_qme_certification', 'established_qme_joining', 'returning_qme', 'other', 'unclear'], 'unclear'),\n  call_availability: field('call_availability', null, null),\n  questions: Array.isArray(m.questions) ? m.questions.slice(0, 5).map(String) : [],\n  ambiguities: Array.isArray(m.ambiguities) ? m.ambiguities.slice(0, 5).map(String) : [],\n  // The model never sees the name; the greeting is filled in here from the contact record.\n  // The closing is fixed here too: whoever sends it signs it.\n  proposed_reply: String(m.proposed_reply || '').slice(0, 2000).replace(/^\\s*Hello,/, c.lastName ? 'Dear Dr. ' + c.lastName + ',' : 'Hello,')\n    .replace(/\\s*(best regards|kind regards|sincerely|regards),?[\\s\\S]*$/i, '').trim() + '\\n\\nBest regards,\\n[Your name], Expedient recruiting',\n  flags,\n  source: 'model',\n};\nif (result.license_states.value && !Array.isArray(result.license_states.value)) result.license_states.value = [String(result.license_states.value)];\n\n// Review routing is ordinary code, not model judgment.\nconst v = c.verifiedQmeStatus, s = result.certification_statement.value;\nconst contradicts =\n  (v === 'certified_qme' && (s === 'says_not_certified' || s === 'says_in_progress' || s === 'says_lapsed')) ||\n  (v === 'not_certified' && s === 'says_certified_qme') ||\n  (v === 'in_progress' && s === 'says_not_certified');\nconst states = result.license_states.value || [];\n// A physician the team does not know yet and who names no state: the coordinator asks.\nconst noStateForNewContact = states.length === 0 && !(c.verifiedQmeStatus || c.ownerId);\nconst outsideCalifornia = states.length > 0 && !states.some(x => /^(CA|california)$/i.test(String(x).trim()));\nif (contradicts) {\n  result.review_status = 'conflict_with_verified_record';\n  flags.push('conflict:verified_qme_status=' + v + ',message_says=' + s);\n} else if (outsideCalifornia || noStateForNewContact || result.intent.value === 'unclear' || result.ambiguities.length) {\n  result.review_status = 'needs_clarification';\n  if (outsideCalifornia) flags.push('clarify:licensed_states_without_california');\n  if (noStateForNewContact) flags.push('clarify:license_state_not_stated');\n} else {\n  result.review_status = 'ready_for_review';\n}\nif (!result.proposed_reply) { flags.push('no_proposed_reply'); }\nreturn [{ json: { contact: c, result } }];"
+        "jsCode": "// The model proposes; this code checks. A value is kept only if its quote is found word for\n// word in the message AND the quote itself supports the value (state named, time words, etc.).\n// Anything else is dropped and flagged. An unusable reply fails the attempt.\nconst prep = $('Prepare interpretation').first().json;\nconst c = prep.contact, previously = prep.previously || {};\nconst flags = [];\nlet raw = ((($input.first().json.choices || [])[0] || {}).message || {}).content || '';\nraw = String(raw).replace(/^\\s*```(?:json)?\\s*/i, '').replace(/```\\s*$/, '');\nlet m;\ntry { m = JSON.parse(raw); } catch (e) { throw new Error('Model reply is not valid JSON'); }\nif (!m || typeof m !== 'object' || Array.isArray(m)) throw new Error('Model reply is not a JSON object');\n\nconst norm = s => String(s ?? '').toLowerCase().replace(/[‘’]/g, \"'\").replace(/[“”]/g, '\"').replace(/\\s+/g, ' ').trim();\nconst unquote = s => String(s ?? '').trim().replace(/^[\"'“‘]+|[\"'.”’]+$/g, '').trim();\nconst source = norm(c.message);\nconst quoteOf = f => { const q = unquote(f && f.evidence); return q && source.includes(norm(q)) ? q : null; };\nconst drop = (name, why) => flags.push('unsupported:' + name + (why ? ' (' + why + ')' : ''));\n\nconst STATES = { AL: 'alabama', AK: 'alaska', AZ: 'arizona', AR: 'arkansas', CA: 'california', CO: 'colorado', CT: 'connecticut', DE: 'delaware', DC: 'district of columbia', FL: 'florida', GA: 'georgia', HI: 'hawaii', ID: 'idaho', IL: 'illinois', IN: 'indiana', IA: 'iowa', KS: 'kansas', KY: 'kentucky', LA: 'louisiana', ME: 'maine', MD: 'maryland', MA: 'massachusetts', MI: 'michigan', MN: 'minnesota', MS: 'mississippi', MO: 'missouri', MT: 'montana', NE: 'nebraska', NV: 'nevada', NH: 'new hampshire', NJ: 'new jersey', NM: 'new mexico', NY: 'new york', NC: 'north carolina', ND: 'north dakota', OH: 'ohio', OK: 'oklahoma', OR: 'oregon', PA: 'pennsylvania', RI: 'rhode island', SC: 'south carolina', SD: 'south dakota', TN: 'tennessee', TX: 'texas', UT: 'utah', VT: 'vermont', VA: 'virginia', WA: 'washington', WV: 'west virginia', WI: 'wisconsin', WY: 'wyoming' };\n\nfunction textField(name, supports) {\n  const f = m[name] || {};\n  let v = f.value;\n  if (v === null || v === undefined || v === '') return { value: null, evidence: null };\n  if (typeof v !== 'string') { drop(name, 'not text'); return { value: null, evidence: null }; }\n  const q = quoteOf(f);\n  if (!q) { drop(name, 'quote not found in the message'); return { value: null, evidence: null }; }\n  if (supports && !supports(v, q)) { drop(name, 'quote does not support the value'); return { value: null, evidence: null }; }\n  return { value: v.trim(), evidence: q };\n}\n\n// A state is kept only if the quote names it, with or without a negation as the field requires.\nfunction statesField(name, negative) {\n  const f = m[name] || {};\n  let v = f.value;\n  if (v === null || v === undefined || (Array.isArray(v) && !v.length)) return { value: null, evidence: null };\n  if (!Array.isArray(v)) v = [v];\n  const q = quoteOf(f);\n  const kept = [];\n  for (const s of v) {\n    const code = String(s).trim().toUpperCase();\n    const named = STATES[code];\n    if (!named) { drop(name, 'not a US state: ' + s); continue; }\n    if (!q) { drop(name, 'quote not found in the message'); continue; }\n    const nq = norm(q);\n    let at = nq.indexOf(named);\n    if (at < 0) { const mm = new RegExp('\\\\b' + code + '\\\\b').exec(q); at = mm ? norm(q.slice(0, mm.index)).length : -1; }\n    if (at < 0) { drop(name, code + ' is not named in the quote'); continue; }\n    const before = nq.slice(Math.max(0, at - 40), at);\n    const negated = /\\b(not|never|no longer)\\b|n't\\b/.test(before);\n    if (negated !== negative) { drop(name, code + (negative ? ' is not negated in the quote' : ' is negated in the quote')); continue; }\n    kept.push(code);\n  }\n  return kept.length ? { value: [...new Set(kept)], evidence: q } : { value: null, evidence: null };\n}\n\nfunction enumField(name, allowed, fallback, needs) {\n  const f = m[name] || {};\n  const v = f.value;\n  if (!allowed.includes(v)) { if (v !== null && v !== undefined) flags.push('invalid_value:' + name); return { value: fallback, evidence: null }; }\n  if (v === fallback) return { value: v, evidence: null };\n  const q = quoteOf(f);\n  if (!q) { drop(name, 'quote not found in the message'); return { value: fallback, evidence: null }; }\n  if (needs[v] && !needs[v].test(q)) { drop(name, 'quote does not support ' + v); return { value: fallback, evidence: null }; }\n  return { value: v, evidence: q };\n}\n\nconst words = s => norm(s).split(/[^a-z]+/).filter(w => w.length >= 4).map(w => w.slice(0, 5));\nconst TIME = /\\b(mon|tues?|wed|thur?s?|fri|sat|sun)[a-z]*\\b|weekday|weekend|morning|afternoon|evening|\\bnoon\\b|lunch|\\d{1,2}\\s?(am|pm)\\b|\\d{1,2}:\\d{2}|today|tomorrow|this week|next week/i;\n\nconst result = {\n  specialty: textField('specialty', (v, q) => words(v).some(w => norm(q).includes(w))),\n  license_states: statesField('license_states', false),\n  states_not_licensed: statesField('states_not_licensed', true),\n  certification_statement: enumField('certification_statement',\n    ['says_certified_qme', 'says_lapsed', 'says_in_progress', 'says_not_certified', 'not_stated'], 'not_stated',\n    { says_certified_qme: /QME|certif/i, says_lapsed: /laps|expir/i, says_in_progress: /course|exam|appl|certif|QME/i, says_not_certified: /\\bnot\\b|n't|\\byet\\b|never/i }),\n  intent: enumField('intent',\n    ['explore_qme_certification', 'established_qme_joining', 'returning_qme', 'other', 'unclear'], 'unclear',\n    { explore_qme_certification: /QME|certif|evaluat/i, established_qme_joining: /QME|evaluat|panel/i, returning_qme: /QME|certif|exam|return|back/i }),\n  call_availability: textField('call_availability', (v, q) => TIME.test(q)),\n  questions: Array.isArray(m.questions) ? m.questions.filter(x => typeof x === 'string').slice(0, 5) : [],\n  ambiguities: Array.isArray(m.ambiguities) ? m.ambiguities.filter(x => typeof x === 'string').slice(0, 5) : [],\n  flags,\n  source: 'model',\n};\n// An open question about licensure in a state the message already speaks to is dropped,\n// unless it asks about plans (applying, obtaining).\nconst statedStates = [...(result.license_states.value || []), ...(result.states_not_licensed.value || []), ...(previously.license_states || [])];\nresult.ambiguities = result.ambiguities.filter(q => {\n  const asksPlan = /plan|apply|obtain|pursu|intend/i.test(q);\n  const aboutStated = statedStates.some(code => new RegExp('\\\\b' + code + '\\\\b').test(q) || norm(q).includes(STATES[code]));\n  const aboutLicence = /licen[cs]/i.test(q);\n  if (aboutLicence && aboutStated && !asksPlan) { flags.push('dropped_question:already_stated_licensure'); return false; }\n  return true;\n});\n// Cross-checks between fields.\nif (result.intent.value === 'established_qme_joining' && result.certification_statement.value !== 'says_certified_qme') {\n  drop('intent', 'established QME without a stated current certification'); result.intent = { value: 'unclear', evidence: null };\n}\nif (result.intent.value === 'returning_qme' && result.certification_statement.value !== 'says_lapsed') {\n  drop('intent', 'returning QME without a stated lapse'); result.intent = { value: 'unclear', evidence: null };\n}\n\n// The reply must say something; greeting and signature are added here, never by the model.\nlet body = String(m.proposed_reply ?? '');\nbody = body.replace(/^\\s*(hello|hi|dear[^,\\n]*)\\s*,/i, '').replace(/\\s*(best regards|kind regards|warm regards|sincerely|regards)\\s*,?[\\s\\S]*$/i, '').trim();\nif (body.replace(/\\s+/g, ' ').length < 60) throw new Error('No usable proposed reply in the model output');\nresult.proposed_reply = (c.lastName ? 'Dear Dr. ' + c.lastName : 'Hello') + ',\\n\\n' + body + '\\n\\nBest regards,\\n[Your name], Expedient recruiting';\n\n// Review routing is ordinary code, not model judgment.\nconst v = c.verifiedQmeStatus, s = result.certification_statement.value;\nconst contradicts =\n  (v === 'certified_qme' && ['says_not_certified', 'says_in_progress', 'says_lapsed'].includes(s)) ||\n  (v === 'not_certified' && s === 'says_certified_qme') ||\n  (v === 'in_progress' && s === 'says_not_certified');\nconst states = result.license_states.value || previously.license_states || [];\nconst notCA = (result.states_not_licensed.value || []).includes('CA');\nconst outsideCalifornia = notCA || (states.length > 0 && !states.includes('CA'));\nconst noStateForNewContact = states.length === 0 && !notCA && !v;\nif (contradicts) {\n  result.review_status = 'conflict_with_verified_record';\n  flags.push('conflict:verified_qme_status=' + v + ',message_says=' + s);\n} else if (outsideCalifornia || noStateForNewContact || result.intent.value === 'unclear' || result.ambiguities.length) {\n  result.review_status = 'needs_clarification';\n  if (outsideCalifornia) flags.push('clarify:not_licensed_in_california');\n  if (noStateForNewContact) flags.push('clarify:license_state_not_stated');\n} else {\n  result.review_status = 'ready_for_review';\n}\nreturn [{ json: { contact: c, result } }];\n"
       },
-      "id": "n007-check-the-interpretation",
+      "id": "n013-check-the-interpretation",
       "name": "Check the interpretation",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1560,
+        2860,
         180
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "with u as (\n  update recruiting.inquiry_ledger\n     set model_result = coalesce(model_result, $2::jsonb), last_step = 'interpreted', updated_at = now()\n   where submission_key = $1\n  returning submission_key)\ninsert into recruiting.event_log (submission_key, step, outcome, detail)\nselect submission_key, 'interpret', $3, $4 from u\nreturning submission_key",
+        "query": "with u as (\n  update recruiting.inquiry_ledger\n     set model_result = coalesce(model_result, $2::jsonb), last_step = 'interpreted', updated_at = now()\n   where submission_key = $1 and lease_token = $5::uuid\n  returning submission_key)\ninsert into recruiting.event_log (submission_key, step, outcome, detail)\nselect submission_key, 'interpret', $3, $4 from u\nreturning submission_key",
         "options": {
-          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, JSON.stringify($json.result), $('Prepare interpretation').first().json.reused ? 'reused' : 'saved', $json.result.source + ':' + $json.result.review_status ] }}"
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, JSON.stringify($json.result), $('Prepare interpretation').first().json.reused ? 'reused' : 'saved', $json.result.source + ':' + $json.result.review_status, $('Configuration').first().json.lease_token ] }}"
         }
       },
-      "id": "n008-save-interpretation",
+      "id": "n014-save-interpretation",
       "name": "Save interpretation",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1820,
+        3120,
         360
       ],
       "credentials": {
@@ -171,6 +335,64 @@
           "name": "Postgres (recruiting ledger)"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "with u as (\n  update recruiting.inquiry_ledger set lease_until = now() + make_interval(secs => $3), updated_at = now()\n   where submission_key = $1 and lease_token = $2::uuid and status = 'processing'\n  returning 1)\nselect exists (select 1 from u) as owner",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $('Configuration').first().json.lease_token, $('Configuration').first().json.cfg.leaseSeconds ] }}"
+        }
+      },
+      "id": "n015-owner-before-writing-",
+      "name": "Owner before writing?",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3120,
+        540
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (recruiting ledger)"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.owner === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n016-still-owner-to-write-",
+      "name": "Still owner to write?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3120,
+        720
+      ]
     },
     {
       "parameters": {
@@ -197,25 +419,25 @@
         },
         "options": {}
       },
-      "id": "n009-suggestions-already-written-",
+      "id": "n017-suggestions-already-written-",
       "name": "Suggestions already written?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2080,
+        3380,
         360
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Suggestions go to separate ai_inquiry_* properties. Lifecycle stage, owner and any\n// staff-verified value are never written by this workflow.\nconst cfg = $('Configuration').first().json.cfg, P = cfg.props;\nconst r = $('Check the interpretation').isExecuted ? $('Check the interpretation').first().json.result : $('Prepare interpretation').first().json.result;\nconst ns = v => (v === null || v === undefined || v === '' ? 'not stated' : v);\nconst properties = {\n  [P.sugSpecialty]: ns(r.specialty.value),\n  [P.sugLicenseStates]: ns(Array.isArray(r.license_states.value) ? r.license_states.value.join(', ') : r.license_states.value),\n  [P.sugCertification]: r.certification_statement.value,\n  [P.sugIntent]: r.intent.value,\n  [P.sugCallWindow]: ns(r.call_availability.value),\n  [P.sugReviewStatus]: r.review_status,\n  [P.sugFlags]: (r.flags || []).join('; ') || 'none',\n  [P.sugRef]: $('Configuration').first().json.submission_key,\n};\nreturn [{ json: { properties } }];"
+        "jsCode": "// Suggestions go to separate ai_inquiry_* properties. Lifecycle stage, owner and any\n// staff-verified value are never written by this workflow.\nconst cfg = $('Configuration').first().json.cfg, P = cfg.props;\nconst r = $('Check the interpretation').isExecuted ? $('Check the interpretation').first().json.result : $('Prepare interpretation').first().json.result;\nconst ns = v => (v === null || v === undefined || v === '' ? 'not stated' : v);\nconst yes = (r.license_states && r.license_states.value) || [];\nconst no = (r.states_not_licensed && r.states_not_licensed.value) || [];\nconst states = [yes.length ? yes.join(', ') : '', no.length ? 'not licensed in ' + no.join(', ') : ''].filter(Boolean).join('; ');\nconst properties = {\n  [P.sugSpecialty]: ns(r.specialty.value),\n  [P.sugLicenseStates]: ns(states),\n  [P.sugCertification]: r.certification_statement.value,\n  [P.sugIntent]: r.intent.value,\n  [P.sugCallWindow]: ns(r.call_availability.value),\n  [P.sugReviewStatus]: r.review_status,\n  [P.sugFlags]: (r.flags || []).join('; ') || 'none',\n  [P.sugRef]: $('Configuration').first().json.submission_key,\n};\nreturn [{ json: { properties } }];\n"
       },
-      "id": "n010-suggestion-fields",
+      "id": "n018-suggestion-fields",
       "name": "Suggestion fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2340,
+        3640,
         180
       ]
     },
@@ -232,12 +454,12 @@
           "timeout": 20000
         }
       },
-      "id": "n011-write-suggestions-to-contact",
+      "id": "n019-write-suggestions-to-contact",
       "name": "Write suggestions to contact",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2600,
+        3900,
         180
       ],
       "credentials": {
@@ -254,17 +476,17 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "with u as (\n  update recruiting.inquiry_ledger set suggestions_written = true, last_step = 'suggestions_written', updated_at = now()\n   where submission_key = $1 returning submission_key)\ninsert into recruiting.event_log (submission_key, step, outcome) select submission_key, 'suggestions', 'written' from u\nreturning submission_key",
+        "query": "with u as (\n  update recruiting.inquiry_ledger set suggestions_written = true, last_step = 'suggestions_written', updated_at = now()\n   where submission_key = $1 and lease_token = $2::uuid returning submission_key)\ninsert into recruiting.event_log (submission_key, step, outcome) select submission_key, 'suggestions', 'written' from u\nreturning submission_key",
         "options": {
-          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key ] }}"
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $('Configuration').first().json.lease_token ] }}"
         }
       },
-      "id": "n012-mark-suggestions-written",
+      "id": "n020-mark-suggestions-written",
       "name": "Mark suggestions written",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        2860,
+        4160,
         180
       ],
       "credentials": {
@@ -299,31 +521,106 @@
         },
         "options": {}
       },
-      "id": "n013-task-already-recorded-",
+      "id": "n021-task-already-recorded-",
       "name": "Task already recorded?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3120,
+        4420,
         360
       ]
     },
     {
       "parameters": {
+        "operation": "executeQuery",
+        "query": "with u as (\n  update recruiting.inquiry_ledger set lease_until = now() + make_interval(secs => $3), updated_at = now()\n   where submission_key = $1 and lease_token = $2::uuid and status = 'processing'\n  returning 1)\nselect exists (select 1 from u) as owner",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $('Configuration').first().json.lease_token, $('Configuration').first().json.cfg.leaseSeconds ] }}"
+        }
+      },
+      "id": "n022-owner-before-the-task-",
+      "name": "Owner before the task?",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        4680,
+        540
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (recruiting ledger)"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.owner === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n023-still-owner-for-the-task-",
+      "name": "Still owner for the task?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4940,
+        540
+      ]
+    },
+    {
+      "parameters": {
         "method": "GET",
-        "url": "={{ $('Configuration').first().json.cfg.hubspotBase }}/crm/v4/objects/contacts/{{ $('Configuration').first().json.contact_id }}/associations/tasks",
+        "url": "={{ $('Configuration').first().json.cfg.hubspotBase }}/crm/v4/objects/contacts/{{ $('Configuration').first().json.contact_id }}/associations/tasks?limit={{ $('Configuration').first().json.cfg.assocPageSize }}",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "hubspotAppToken",
         "options": {
-          "timeout": 20000
+          "timeout": 20000,
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "after",
+                    "value": "={{ $response.body.paging?.next?.after }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.paging?.next?.after }}",
+              "limitPagesFetched": true,
+              "maxRequests": 50
+            }
+          }
         }
       },
-      "id": "n014-list-the-contact-s-tasks",
+      "id": "n024-list-the-contact-s-tasks",
       "name": "List the contact's tasks",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3380,
+        5200,
         540
       ],
       "credentials": {
@@ -339,14 +636,14 @@
     },
     {
       "parameters": {
-        "jsCode": "const ids = ($input.first().json.results || []).map(r => String(r.toObjectId));\nreturn [{ json: { ids } }];"
+        "jsCode": "// Every page of the contact's task associations, split into batch-read chunks of 100.\nconst ids = $input.all().flatMap(i => (i.json.results || []).map(r => String(r.toObjectId)));\nconst chunks = [];\nfor (let i = 0; i < ids.length; i += 100) chunks.push({ json: { ids: ids.slice(i, i + 100) } });\nreturn chunks.length ? chunks : [{ json: { ids: [] } }];\n"
       },
-      "id": "n015-task-ids",
+      "id": "n025-task-ids",
       "name": "Task ids",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3640,
+        5460,
         540
       ]
     },
@@ -375,12 +672,12 @@
         },
         "options": {}
       },
-      "id": "n016-any-tasks-",
+      "id": "n026-any-tasks-",
       "name": "Any tasks?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3900,
+        5720,
         540
       ]
     },
@@ -392,17 +689,17 @@
         "nodeCredentialType": "hubspotAppToken",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ inputs: $json.ids.map(id => ({ id })), properties: ['hs_task_subject','hs_task_body','hs_task_status','hs_timestamp','hubspot_owner_id'] }) }}",
+        "jsonBody": "={{ JSON.stringify({ inputs: $json.ids.map(id => ({ id })), properties: ['hs_task_subject','hs_task_body','hs_task_status','hs_task_priority','hs_timestamp','hubspot_owner_id'] }) }}",
         "options": {
           "timeout": 20000
         }
       },
-      "id": "n017-read-those-tasks",
+      "id": "n027-read-those-tasks",
       "name": "Read those tasks",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4160,
+        5980,
         360
       ],
       "credentials": {
@@ -418,14 +715,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// Three outcomes, decided by plain code:\n//  reconciled: a task carrying THIS submission's reference already exists (an earlier\n//              attempt created it but never got the answer), so nothing is created;\n//  appended:   the physician already has an open review task from this workflow, so the\n//              new inquiry is added to it instead of opening a second work item;\n//  created:    otherwise, one new task, associated to the contact.\nconst cfgItem = $('Configuration').first().json;\nconst cfg = cfgItem.cfg, key = cfgItem.submission_key;\nconst r = $('Check the interpretation').isExecuted ? $('Check the interpretation').first().json.result : $('Prepare interpretation').first().json.result;\nconst c = $('Prepare interpretation').first().json.contact;\nconst tasks = ($input.first().json.results || []).map(t => ({ id: String(t.id), ...t.properties }));\nconst ref = 'ref:' + key;\n\nconst esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst ns = v => (v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length)) ? '<i>not stated</i>' : esc(Array.isArray(v) ? v.join(', ') : v);\nconst label = {\n  says_certified_qme: 'says they are a certified QME', says_in_progress: 'says certification is in progress',\n  says_not_certified: 'says they are not certified', says_lapsed: 'says their certification lapsed', not_stated: 'not stated',\n  explore_qme_certification: 'exploring QME certification', established_qme_joining: 'established QME looking at the group', returning_qme: 'former QME looking to return',\n  other: 'other request', unclear: 'unclear',\n  ready_for_review: 'Ready for review', needs_clarification: 'Needs clarification',\n  conflict_with_verified_record: 'Conflicts with the verified record', needs_information: 'Needs information',\n};\nconst quote = f => f && f.evidence ? ' <span style=\"color:#666\">(\"' + esc(f.evidence) + '\")</span>' : '';\nconst section =\n  '<p><b>' + esc(label[r.review_status] || r.review_status) + '</b>. Nothing has been sent to the physician.</p>' +\n  '<p><b>What they wrote</b><br>' + esc(c.message || '(empty message)') + '</p>' +\n  '<p><b>Suggested reading, from their own words</b><br>' +\n  'Specialty: ' + ns(r.specialty.value) + quote(r.specialty) + '<br>' +\n  'Licensed in: ' + ns(r.license_states.value) + quote(r.license_states) + '<br>' +\n  'Certification: ' + esc(label[r.certification_statement.value] || r.certification_statement.value) + quote(r.certification_statement) + '<br>' +\n  'Looking for: ' + esc(label[r.intent.value] || r.intent.value) + quote(r.intent) + '<br>' +\n  'Available for a first call: ' + ns(r.call_availability.value) + quote(r.call_availability) + ' (a call window, not evaluation capacity)</p>' +\n  (c.verifiedQmeStatus ? '<p><b>Verified record kept as is</b>: QME status ' + esc(({ certified_qme: 'certified QME', in_progress: 'in progress', not_certified: 'not certified' })[c.verifiedQmeStatus] || c.verifiedQmeStatus) + (r.review_status === 'conflict_with_verified_record' ? '. The new message does not match it; please check with the physician.' : '') + '</p>' : '') +\n  ((r.ambiguities || []).length ? '<p><b>To clarify</b><br>' + r.ambiguities.map(esc).join('<br>') + '</p>' : '') +\n  '<p><b>Proposed reply</b> (edit, then send it yourself)<br>' + esc(r.proposed_reply).replace(/\\n/g, '<br>') + '</p>' +\n  '<p style=\"color:#999;font-size:11px\">' + cfg.taskMarker + ' ' + ref + '</p>';\n\nconst exact = tasks.find(t => (t.hs_task_body || '').includes(ref));\nif (exact) return [{ json: { action: 'reconciled', taskId: exact.id } }];\n\nconst open = tasks.find(t => (t.hs_task_body || '').includes(cfg.taskMarker) && t.hs_task_status !== 'COMPLETED');\nif (open) {\n  const body = (open.hs_task_body || '') + '<hr><p><b>New inquiry from the same physician</b>, received ' + esc(new Date(cfgItem.conversion_at).toISOString().slice(0, 16).replace('T', ' ')) + ' UTC</p>' + section;\n  return [{ json: { action: 'appended', taskId: open.id, request: { properties: { hs_task_body: body, hs_task_priority: r.review_status === 'conflict_with_verified_record' ? 'HIGH' : (open.hs_task_priority || 'MEDIUM') } } } }];\n}\n\n// Due: next business day, 10:00 Pacific.\nconst due = new Date(Date.now() + 24 * 3600e3);\nwhile ([0, 6].includes(due.getUTCDay())) due.setUTCDate(due.getUTCDate() + 1);\nconst ymd = due.toISOString().slice(0, 10);\nconst dueAt = new Date(ymd + 'T' + String(cfg.dueHourPacific + 7).padStart(2, '0') + ':00:00Z');\nconst who = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unnamed physician';\nconst request = {\n  properties: {\n    hs_task_subject: 'Physician inquiry: ' + who + (c.credentials ? ', ' + c.credentials : '') + ' (review and reply)',\n    hs_task_body: section,\n    hs_task_status: 'NOT_STARTED',\n    hs_task_priority: r.review_status === 'conflict_with_verified_record' ? 'HIGH' : 'MEDIUM',\n    hs_task_type: 'TODO',\n    hs_timestamp: dueAt.toISOString(),\n    hubspot_owner_id: String(cfg.recruitingOwnerId),\n  },\n  associations: [{ to: { id: c.id }, types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 204 }] }],\n};\nreturn [{ json: { action: 'created', request } }];"
+        "jsCode": "// One open review task per physician, with subsequent inquiries appended. Decided by plain code:\n//  reconciled: a task carrying THIS submission's reference already exists (an earlier attempt\n//              created it but never got the answer), so nothing is created;\n//  appended:   the physician already has an open review task from this workflow;\n//  created:    otherwise, one new task, associated to the contact.\nconst cfgItem = $('Configuration').first().json;\nconst cfg = cfgItem.cfg, key = cfgItem.submission_key;\nconst r = $('Check the interpretation').isExecuted ? $('Check the interpretation').first().json.result : $('Prepare interpretation').first().json.result;\nconst c = $('Prepare interpretation').first().json.contact;\nconst tasks = $input.all().flatMap(i => (i.json.results || []).map(t => ({ id: String(t.id), ...t.properties })));\nconst ref = 'ref:' + key;\n\nconst esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst ns = v => (v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length)) ? '<i>not stated</i>' : esc(Array.isArray(v) ? v.join(', ') : v);\nconst label = {\n  says_certified_qme: 'says they are a certified QME', says_lapsed: 'says their certification lapsed', says_in_progress: 'says certification is in progress',\n  says_not_certified: 'says they are not certified', not_stated: 'not stated',\n  explore_qme_certification: 'exploring QME certification', established_qme_joining: 'established QME looking at the group',\n  returning_qme: 'former QME looking to return', other: 'other request', unclear: 'unclear',\n  ready_for_review: 'Ready for review', needs_clarification: 'Needs clarification',\n  conflict_with_verified_record: 'Conflicts with the verified record', needs_information: 'Needs information',\n  certified_qme: 'certified QME', in_progress: 'in progress', not_certified: 'not certified',\n};\nconst quote = f => f && f.evidence ? ' <span style=\"color:#666\">(\"' + esc(f.evidence) + '\")</span>' : '';\nconst notLic = r.states_not_licensed && r.states_not_licensed.value;\nconst section =\n  '<p><b>' + esc(label[r.review_status] || r.review_status) + '</b>. Nothing has been sent to the physician.</p>' +\n  '<p><b>What they wrote</b><br>' + esc(c.message || '(empty message)') + '</p>' +\n  '<p><b>Suggested reading, from their own words</b><br>' +\n  'Specialty: ' + ns(r.specialty.value) + quote(r.specialty) + '<br>' +\n  'Licensed in: ' + ns(r.license_states.value) + quote(r.license_states) + '<br>' +\n  (notLic ? 'Says not licensed in: ' + ns(notLic) + quote(r.states_not_licensed) + '<br>' : '') +\n  'Certification: ' + esc(label[r.certification_statement.value] || r.certification_statement.value) + quote(r.certification_statement) + '<br>' +\n  'Looking for: ' + esc(label[r.intent.value] || r.intent.value) + quote(r.intent) + '<br>' +\n  'Available for a first call: ' + ns(r.call_availability.value) + quote(r.call_availability) + ' (a call window, not evaluation capacity)</p>' +\n  (c.verifiedQmeStatus ? '<p><b>Verified record kept as is</b>: QME status ' + esc(label[c.verifiedQmeStatus] || c.verifiedQmeStatus) + (r.review_status === 'conflict_with_verified_record' ? '. The new message does not match it; please check with the physician.' : '') + '</p>' : '') +\n  ((r.ambiguities || []).length ? '<p><b>To clarify</b><br>' + r.ambiguities.map(esc).join('<br>') + '</p>' : '') +\n  '<p><b>Proposed reply</b> (edit, then send it yourself)<br>' + esc(r.proposed_reply).replace(/\\n/g, '<br>') + '</p>' +\n  '<p style=\"color:#999;font-size:11px\">' + cfg.taskMarker + ' ' + ref + '</p>';\n\nconst exact = tasks.find(t => (t.hs_task_body || '').includes(ref));\nif (exact) return [{ json: { action: 'reconciled', taskId: exact.id } }];\n\nconst conflict = r.review_status === 'conflict_with_verified_record';\nconst open = tasks.find(t => (t.hs_task_body || '').includes(cfg.taskMarker) && t.hs_task_status !== 'COMPLETED');\nif (open) {\n  const body = (open.hs_task_body || '') + '<hr><p><b>New inquiry from the same physician</b>, received ' + esc(new Date(cfgItem.conversion_at).toISOString().slice(0, 16).replace('T', ' ')) + ' UTC</p>' + section;\n  // Priority is only ever raised (a new conflict), never sent on an ordinary append.\n  const properties = { hs_task_body: body };\n  if (conflict) properties.hs_task_priority = 'HIGH';\n  return [{ json: { action: 'appended', taskId: open.id, request: { properties } } }];\n}\n\n// Due: next weekday (no holiday calendar) at 10:00 in Los Angeles, converted to UTC.\nconst now = cfg.now ? new Date(cfg.now) : new Date();\nfunction partsIn(tz, d) {\n  const o = {};\n  for (const p of new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(d)) o[p.type] = p.value;\n  return o;\n}\nfunction offsetMs(tz, utcMs) {\n  const o = partsIn(tz, new Date(utcMs));\n  return Date.UTC(+o.year, +o.month - 1, +o.day, +o.hour, +o.minute, +o.second) - utcMs;\n}\nfunction nextWeekdayAt(tz, hour, from) {\n  const o = partsIn(tz, from);\n  const y = +o.year, mo = +o.month - 1;\n  let d = +o.day + 1;\n  while ([0, 6].includes(new Date(Date.UTC(y, mo, d)).getUTCDay())) d++;\n  const wall = Date.UTC(y, mo, d, hour);\n  let t = wall - offsetMs(tz, wall);\n  t = wall - offsetMs(tz, t);\n  return new Date(t);\n}\nconst dueAt = nextWeekdayAt(cfg.timeZone, cfg.dueHourLocal, now);\nconst who = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unnamed physician';\nconst request = {\n  properties: {\n    hs_task_subject: 'Physician inquiry: ' + who + (c.credentials ? ', ' + c.credentials : '') + ' (review and reply)',\n    hs_task_body: section,\n    hs_task_status: 'NOT_STARTED',\n    hs_task_priority: conflict ? 'HIGH' : 'MEDIUM',\n    hs_task_type: 'TODO',\n    hs_timestamp: dueAt.toISOString(),\n    hubspot_owner_id: String(cfg.recruitingOwnerId),\n  },\n  associations: [{ to: { id: c.id }, types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 204 }] }],\n};\nreturn [{ json: { action: 'created', request } }];\n"
       },
-      "id": "n018-plan-the-review-task",
+      "id": "n028-plan-the-review-task",
       "name": "Plan the review task",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4420,
+        6240,
         540
       ]
     },
@@ -435,12 +732,12 @@
         "numberOutputs": 3,
         "output": "={{ ({ created: 0, appended: 1, reconciled: 2 })[$json.action] }}"
       },
-      "id": "n019-route-by-action",
+      "id": "n029-route-by-action",
       "name": "Route by action",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        4680,
+        6500,
         540
       ]
     },
@@ -457,12 +754,12 @@
           "timeout": 20000
         }
       },
-      "id": "n020-create-review-task",
+      "id": "n030-create-review-task",
       "name": "Create review task",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4940,
+        6760,
         360
       ],
       "credentials": {
@@ -489,12 +786,12 @@
           "timeout": 20000
         }
       },
-      "id": "n021-add-inquiry-to-open-task",
+      "id": "n031-add-inquiry-to-open-task",
       "name": "Add inquiry to open task",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4940,
+        6760,
         540
       ],
       "credentials": {
@@ -512,29 +809,29 @@
       "parameters": {
         "jsCode": "const plan = $('Plan the review task').first().json;\nconst id = $input.first().json.id ? String($input.first().json.id) : plan.taskId;\nreturn [{ json: { task_id: id, task_action: plan.action } }];"
       },
-      "id": "n022-task-outcome",
+      "id": "n032-task-outcome",
       "name": "Task outcome",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5200,
+        7020,
         540
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "with u as (\n  update recruiting.inquiry_ledger\n     set status = 'done', task_id = coalesce($2, task_id), task_action = coalesce($3, task_action),\n         last_step = 'done', lease_until = null, completed_at = now(), updated_at = now()\n   where submission_key = $1\n  returning submission_key, task_id, task_action)\ninsert into recruiting.event_log (submission_key, step, outcome, detail)\nselect submission_key, 'task', 'done', coalesce($3, 'already recorded') || ' ' || task_id from u\nreturning submission_key",
+        "query": "with u as (\n  update recruiting.inquiry_ledger\n     set status = 'done', task_id = coalesce($2, task_id), task_action = coalesce($3, task_action),\n         last_step = 'done', lease_until = null, lease_token = null, completed_at = now(), updated_at = now()\n   where submission_key = $1 and lease_token = $4::uuid\n  returning submission_key, task_id, task_action)\ninsert into recruiting.event_log (submission_key, step, outcome, detail)\nselect submission_key, 'task', 'done', coalesce($3, 'already recorded') || ' ' || task_id from u\nreturning submission_key",
         "options": {
-          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $json.task_id || null, $json.task_action || null ] }}"
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $json.task_id || null, $json.task_action || null, $('Configuration').first().json.lease_token ] }}"
         }
       },
-      "id": "n023-mark-done",
+      "id": "n033-mark-done",
       "name": "Mark done",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        5460,
+        7280,
         360
       ],
       "credentials": {
@@ -546,31 +843,31 @@
     },
     {
       "parameters": {
-        "jsCode": "// Keep only the step and the HTTP status: alerts never carry the physician's message.\nconst e = $input.first().json.error || $input.first().json;\nconst text = JSON.stringify(e).slice(0, 2000);\nconst status = (e && (e.httpCode || e.status)) || (text.match(/\\b(4\\d\\d|5\\d\\d)\\b/) || [])[1] || (/ECONNRESET|socket hang up|ETIMEDOUT|timeout/i.test(text) ? 'no response' : 'error');\nreturn [{ json: { step: $prevNode.name, status: String(status) } }];"
+        "jsCode": "// Keep only the step and a short status: alerts never carry the physician's message.\nconst e = $input.first().json.error || $input.first().json;\nconst text = typeof e === 'string' ? e : JSON.stringify(e).slice(0, 2000);\nlet status = (e && typeof e === 'object' && (e.httpCode || e.status)) || (text.match(/\\b(4\\d\\d|5\\d\\d)\\b/) || [])[1] ||\n  (/ECONNRESET|socket hang up|ETIMEDOUT|timeout/i.test(text) ? 'no response' : null);\nif (!status) status = /proposed reply/i.test(text) ? 'no usable proposed reply' : /JSON/i.test(text) ? 'invalid model output' : 'error';\nreturn [{ json: { step: $prevNode.name, status: String(status) } }];\n"
       },
-      "id": "n024-describe-the-failure",
+      "id": "n034-describe-the-failure",
       "name": "Describe the failure",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2080,
+        3120,
         900
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "with u as (\n  update recruiting.inquiry_ledger\n     set status = case when attempts >= $3 then 'failed' else 'retry' end,\n         next_attempt_at = now() + make_interval(secs => least(3600, $5 * power(2, greatest(attempts - 1, 0)))::int),\n         last_step = $2, last_error = $2 || ': ' || $4, lease_until = null, updated_at = now()\n   where submission_key = $1\n  returning submission_key, contact_id, status, attempts, last_error),\nev as (\n  insert into recruiting.event_log (submission_key, step, outcome, detail)\n  select submission_key, $2, 'failed', $4 || ' (attempt ' || attempts || ', now ' || status || ')' from u)\nselect * from u",
+        "query": "with u as (\n  update recruiting.inquiry_ledger\n     set status = case when attempts >= $3 then 'failed' else 'retry' end,\n         next_attempt_at = now() + make_interval(secs => least(3600, $5 * power(2, greatest(attempts - 1, 0)))::int),\n         alert_next_at = case when attempts >= $3 then now() + interval '60 seconds' else alert_next_at end,\n         last_step = $2, last_error = $2 || ': ' || $4, lease_until = null, lease_token = null, updated_at = now()\n   where submission_key = $1 and lease_token = $6::uuid\n  returning submission_key, contact_id, status, attempts, last_error),\nev as (\n  insert into recruiting.event_log (submission_key, step, outcome, detail)\n  select submission_key, $2, 'failed', $4 || ' (attempt ' || attempts || ', now ' || status || ')' from u)\nselect * from u",
         "options": {
-          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $json.step, $('Configuration').first().json.cfg.maxAttempts, $json.status, $('Configuration').first().json.cfg.retryBaseSeconds ] }}"
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, $json.step, $('Configuration').first().json.cfg.maxAttempts, $json.status, $('Configuration').first().json.cfg.retryBaseSeconds, $('Configuration').first().json.lease_token ] }}"
         }
       },
-      "id": "n025-record-the-failure",
+      "id": "n035-record-the-failure",
       "name": "Record the failure",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        2340,
+        3380,
         900
       ],
       "credentials": {
@@ -605,12 +902,12 @@
         },
         "options": {}
       },
-      "id": "n026-out-of-attempts-",
+      "id": "n036-out-of-attempts-",
       "name": "Out of attempts?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2600,
+        3640,
         900
       ]
     },
@@ -620,39 +917,59 @@
         "url": "={{ $env.ALERT_WEBHOOK_URL }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ text: 'Physician inquiry workflow: submission ' + $json.submission_key + ' stopped after ' + $json.attempts + ' attempts at step \"' + $json.last_error + '\". Contact record ' + $json.contact_id + '. Nothing was sent to the physician. Check the execution and the ledger.', submission_key: $json.submission_key, contact_id: $json.contact_id, last_error: $json.last_error, attempts: $json.attempts }) }}",
+        "jsonBody": "={{ JSON.stringify({ text: 'Physician inquiry workflow: submission ' + $json.submission_key + ' stopped after ' + $json.attempts + ' attempts (last error: ' + ($json.last_error || 'interrupted') + '). Contact record ' + $json.contact_id + '. Nothing was sent to the physician. Check the execution and the ledger.', submission_key: $json.submission_key, contact_id: $json.contact_id, last_error: $json.last_error, attempts: $json.attempts }) }}",
         "options": {
           "timeout": 10000
         }
       },
-      "id": "n027-send-failure-alert",
+      "id": "n037-send-failure-alert",
       "name": "Send failure alert",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2860,
+        3900,
         720
       ],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 2000,
-      "onError": "continueRegularOutput"
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "update recruiting.inquiry_ledger set alerted_at = now() where submission_key = $1 returning submission_key",
+        "query": "with u as (update recruiting.inquiry_ledger set alerted_at = now(), alert_last_error = null, updated_at = now()\n   where submission_key = $1 returning submission_key)\ninsert into recruiting.event_log (submission_key, step, outcome) select submission_key, 'alert', 'delivered' from u\nreturning submission_key",
         "options": {
           "queryReplacement": "={{ [ $('Configuration').first().json.submission_key ] }}"
         }
       },
-      "id": "n028-mark-alerted",
+      "id": "n038-mark-alerted",
       "name": "Mark alerted",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        3120,
+        4160,
         720
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (recruiting ledger)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "with u as (update recruiting.inquiry_ledger\n     set alert_attempts = alert_attempts + 1, alert_last_error = $2,\n         alert_next_at = now() + make_interval(secs => least(3600, $3 * power(2, alert_attempts))::int), updated_at = now()\n   where submission_key = $1 returning submission_key, alert_attempts)\ninsert into recruiting.event_log (submission_key, step, outcome, detail)\nselect submission_key, 'alert', 'not delivered', $2 || ' (try ' || alert_attempts || ', will retry)' from u\nreturning submission_key",
+        "options": {
+          "queryReplacement": "={{ [ $('Configuration').first().json.submission_key, 'alert endpoint: ' + String(($json.error && ($json.error.httpCode || $json.error.status)) || 'no response'), $('Configuration').first().json.cfg.retryBaseSeconds ] }}"
+        }
+      },
+      "id": "n039-mark-alert-pending",
+      "name": "Mark alert pending",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        4160,
+        1080
       ],
       "credentials": {
         "postgres": {
@@ -665,12 +982,12 @@
       "parameters": {
         "errorMessage": "={{ 'Step \"' + $('Describe the failure').first().json.step + '\" failed (' + $('Describe the failure').first().json.status + '). Ledger status: ' + $('Record the failure').first().json.status + '.' }}"
       },
-      "id": "n029-fail-visibly",
+      "id": "n040-fail-visibly",
       "name": "Fail visibly",
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
       "position": [
-        3380,
+        4420,
         900
       ]
     }
@@ -691,7 +1008,36 @@
       "main": [
         [
           {
+            "node": "Take the lease",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Take the lease": {
+      "main": [
+        [
+          {
+            "node": "Owner at start?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owner at start?": {
+      "main": [
+        [
+          {
             "node": "Read contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lease lost",
             "type": "main",
             "index": 0
           }
@@ -702,7 +1048,7 @@
       "main": [
         [
           {
-            "node": "Prepare interpretation",
+            "node": "Still the owner?",
             "type": "main",
             "index": 0
           }
@@ -710,6 +1056,46 @@
         [
           {
             "node": "Describe the failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still the owner?": {
+      "main": [
+        [
+          {
+            "node": "Owner after reading?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owner after reading?": {
+      "main": [
+        [
+          {
+            "node": "Earlier readings",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lease lost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Earlier readings": {
+      "main": [
+        [
+          {
+            "node": "Prepare interpretation",
             "type": "main",
             "index": 0
           }
@@ -771,6 +1157,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Describe the failure",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -778,7 +1171,36 @@
       "main": [
         [
           {
+            "node": "Owner before writing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owner before writing?": {
+      "main": [
+        [
+          {
+            "node": "Still owner to write?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still owner to write?": {
+      "main": [
+        [
+          {
             "node": "Suggestions already written?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lease lost",
             "type": "main",
             "index": 0
           }
@@ -854,7 +1276,36 @@
         ],
         [
           {
+            "node": "Owner before the task?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owner before the task?": {
+      "main": [
+        [
+          {
+            "node": "Still owner for the task?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still owner for the task?": {
+      "main": [
+        [
+          {
             "node": "List the contact's tasks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lease lost",
             "type": "main",
             "index": 0
           }
@@ -1057,10 +1508,28 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Mark alert pending",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "Mark alerted": {
+      "main": [
+        [
+          {
+            "node": "Fail visibly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark alert pending": {
       "main": [
         [
           {

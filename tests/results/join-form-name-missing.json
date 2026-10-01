@@ -1,0 +1,13 @@
+{
+  "id": "joinFormNameMissing",
+  "how": "n8n started with JOIN_FORM_NAME blank, one poll triggered",
+  "result": "poller execution failed at Search window; the error workflow posted this alert",
+  "alerts": [
+    {
+      "at": "2026-10-01T20:03:26.276Z",
+      "body": {
+        "text": "Physician inquiry workflow: \"Physician inquiry: poll HubSpot form submissions\" failed at node \"Search window\" (execution 656): JOIN_FORM_NAME is not set. Refusing to treat every form as a join inquiry. [line 4]"
+      }
+    }
+  ]
+}

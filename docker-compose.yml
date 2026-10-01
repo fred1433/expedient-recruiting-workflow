@@ -53,13 +53,15 @@ services:
       MODEL_BASE_URL: ${MODEL_BASE_URL:-http://simulator:4010}
       MODEL_NAME: ${MODEL_NAME:-gpt-5.4-mini-2026-03-17}
       RECRUITING_OWNER_ID: ${RECRUITING_OWNER_ID:-900001}
-      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-http://simulator:4010/__alerts}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-http://simulator:4010/hooks/alert}
       POLL_TRIGGER_TOKEN: ${POLL_TRIGGER_TOKEN:-local-test-token}
       LEASE_SECONDS: ${LEASE_SECONDS:-300}
       RETRY_BASE_SECONDS: ${RETRY_BASE_SECONDS:-30}
       MAX_ATTEMPTS: ${MAX_ATTEMPTS:-5}
       POLL_OVERLAP_MINUTES: ${POLL_OVERLAP_MINUTES:-10}
       JOIN_FORM_NAME: ${JOIN_FORM_NAME:-Join Expedient}
+      SEARCH_PAGE_SIZE: ${SEARCH_PAGE_SIZE:-100}
+      ASSOC_PAGE_SIZE: ${ASSOC_PAGE_SIZE:-100}
     volumes:
       - n8ndata:/home/node/.n8n
       - ./workflows:/import/workflows:ro

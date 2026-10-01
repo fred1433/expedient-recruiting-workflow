@@ -1,25 +1,15 @@
 {
   "n8n": "2.42.2",
-  "ranAt": "2026-10-01T19:24:00.461Z",
+  "ranAt": "2026-10-01T20:18:56.921Z",
   "scenarios": [
     {
       "id": "ordinary",
-      "started": "2026-10-01T19:20:47.744Z",
+      "started": "2026-10-01T20:12:12.338Z",
       "passed": true,
       "checks": [
         {
           "label": "exactly one review task",
           "ok": true
-        },
-        {
-          "label": "certification read as not yet certified",
-          "ok": true,
-          "detail": "says_not_certified"
-        },
-        {
-          "label": "complete inquiry routed as ready for review",
-          "ok": true,
-          "detail": "ready_for_review"
         },
         {
           "label": "task associated to the contact",
@@ -30,22 +20,58 @@
           "ok": true
         },
         {
-          "label": "task has a due date",
+          "label": "due the next weekday at 10:00 in Los Angeles",
           "ok": true,
           "detail": "2026-10-02T17:00:00.000Z"
         },
         {
-          "label": "proposed reply is in the task body",
-          "ok": true
+          "label": "complete inquiry routed as ready for review",
+          "ok": true,
+          "detail": "ready_for_review"
         },
         {
-          "label": "one model call: credentials, message and the known-to-team flag only",
+          "label": "specialty read from the message",
+          "ok": true,
+          "detail": {
+            "value": "psychiatrist",
+            "evidence": "I'm a board-certified psychiatrist"
+          }
+        },
+        {
+          "label": "licensed in CA, quoted",
+          "ok": true,
+          "detail": {
+            "value": [
+              "CA"
+            ],
+            "evidence": "licensed in California"
+          }
+        },
+        {
+          "label": "certification read as not yet certified",
+          "ok": true,
+          "detail": {
+            "value": "says_not_certified",
+            "evidence": "I'm not a QME yet and haven't taken the course"
+          }
+        },
+        {
+          "label": "call window is Thursday afternoons",
+          "ok": true,
+          "detail": {
+            "value": "Thursday afternoons",
+            "evidence": "I'm free for a call on Thursday afternoons"
+          }
+        },
+        {
+          "label": "one model call, sent only credentials, message, the known-to-team flag and earlier statements",
           "ok": true,
           "detail": [
             [
               "credentials",
               "message",
-              "known_to_team"
+              "known_to_team",
+              "previously_stated"
             ]
           ]
         },
@@ -54,18 +80,22 @@
           "ok": true
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
       "id": "established",
-      "started": "2026-10-01T19:20:55.857Z",
+      "started": "2026-10-01T20:12:22.450Z",
       "passed": true,
       "checks": [
         {
@@ -75,21 +105,44 @@
         {
           "label": "intent read as an established QME",
           "ok": true,
-          "detail": "established_qme_joining"
+          "detail": {
+            "value": "established_qme_joining",
+            "evidence": "I'm looking at groups that handle scheduling and report logistics so I can focus on the evaluations"
+          }
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "certification read as currently certified",
+          "ok": true,
+          "detail": {
+            "value": "says_certified_qme",
+            "evidence": "I've been a QME since 2019"
+          }
+        },
+        {
+          "label": "email preference not mistaken for a call window",
+          "ok": true,
+          "detail": {
+            "value": null,
+            "evidence": null
+          }
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
       "id": "sparse",
-      "started": "2026-10-01T19:21:02.145Z",
+      "started": "2026-10-01T20:12:30.022Z",
       "passed": true,
       "checks": [
         {
@@ -101,26 +154,30 @@
           "ok": true
         },
         {
-          "label": "everything else left as not stated",
+          "label": "specialty, states, certification, intent and call window all left as not stated",
           "ok": true
         },
         {
-          "label": "still one review task, with a reply asking for the basics",
+          "label": "one review task whose reply asks for specialty, licensed states and QME status",
           "ok": true
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
       "id": "outOfState",
-      "started": "2026-10-01T19:21:06.687Z",
+      "started": "2026-10-01T20:12:34.670Z",
       "passed": true,
       "checks": [
         {
@@ -128,28 +185,53 @@
           "ok": true
         },
         {
+          "label": "licensed in AZ and NV, quoted",
+          "ok": true,
+          "detail": {
+            "value": [
+              "AZ",
+              "NV"
+            ],
+            "evidence": "licensed in Arizona and Nevada"
+          }
+        },
+        {
+          "label": "says not licensed in California, quoted",
+          "ok": true,
+          "detail": {
+            "value": [
+              "CA"
+            ],
+            "evidence": "if I'm not licensed in California yet?"
+          }
+        },
+        {
           "label": "routed to clarification",
           "ok": true,
           "detail": "needs_clarification"
         },
         {
-          "label": "flagged: licensed states without California",
+          "label": "the reply does not ask whether she holds a California license",
           "ok": true,
-          "detail": "clarify:licensed_states_without_california"
+          "detail": "Dear Dr. Park,\n\nThank you for reaching out. We’d be glad to talk with you about QME work and the usual California requirements and next steps. You mentioned that any weekday after 5pm works for a call, so we can propose a time.\n\nTo make the conversation most useful, could you let us know whether you are currently a certified QME, or whether you’re exploring certification?\n\nBest regards,\n[Your name], Expedient recruiting"
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
       "id": "conflict",
-      "started": "2026-10-01T19:21:13.499Z",
+      "started": "2026-10-01T20:12:45.107Z",
       "passed": true,
       "checks": [
         {
@@ -176,26 +258,46 @@
         {
           "label": "lapsed certification read as lapsed",
           "ok": true,
-          "detail": "says_lapsed"
+          "detail": {
+            "value": "says_lapsed",
+            "evidence": "My QME certification lapsed"
+          }
         },
         {
-          "label": "not read as an established QME",
+          "label": "read as a former QME looking to return, not an established one",
           "ok": true,
-          "detail": "returning_qme"
+          "detail": {
+            "value": "returning_qme",
+            "evidence": "I'm retaking the exam this spring"
+          }
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "the reply does not offer work before the certification is current",
+          "ok": true,
+          "detail": "Dear Dr. Ortiz,\n\nThank you for following up. I’m sorry to hear your QME certification has lapsed, and it’s helpful to know you’re retaking the exam this spring.\n\nWe’d be glad to have a first conversation about next steps once your certification is current again. Please share your current exam timeline, and our team will propose a time to speak.\n\nBest regards,\n[Your name], Expedient recruiting"
+        },
+        {
+          "label": "the reply does not ask for background the team already holds",
+          "ok": true,
+          "detail": "Dear Dr. Ortiz,\n\nThank you for following up. I’m sorry to hear your QME certification has lapsed, and it’s helpful to know you’re retaking the exam this spring.\n\nWe’d be glad to have a first conversation about next steps once your certification is current again. Please share your current exam timeline, and our team will propose a time to speak.\n\nBest regards,\n[Your name], Expedient recruiting"
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
       "id": "unclear",
-      "started": "2026-10-01T19:21:19.755Z",
+      "started": "2026-10-01T20:12:54.941Z",
       "passed": true,
       "checks": [
         {
@@ -206,21 +308,44 @@
         {
           "label": "no certification status invented",
           "ok": true,
-          "detail": "not_stated"
+          "detail": {
+            "value": "not_stated",
+            "evidence": null
+          }
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "not read as exploring QME certification",
+          "ok": true,
+          "detail": {
+            "value": "other",
+            "evidence": "wanted to see what you offer"
+          }
+        },
+        {
+          "label": "no state invented",
+          "ok": true,
+          "detail": {
+            "value": null,
+            "evidence": null
+          }
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
       "id": "doubleDelivery",
-      "started": "2026-10-01T19:21:25.455Z",
+      "started": "2026-10-01T20:13:02.487Z",
       "passed": true,
       "checks": [
         {
@@ -246,18 +371,30 @@
           "ok": true
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "email preference not mistaken for a call window",
+          "ok": true,
+          "detail": {
+            "value": null,
+            "evidence": null
+          }
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
       "id": "samePhysicianAgain",
-      "started": "2026-10-01T19:21:35.629Z",
+      "started": "2026-10-01T20:13:14.004Z",
       "passed": true,
       "checks": [
         {
@@ -277,18 +414,83 @@
           "ok": true
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "second inquiry read as certification in progress",
+          "ok": true,
+          "detail": {
+            "value": "says_in_progress",
+            "evidence": "I've now signed up for the QME course and booked the exam for January"
+          }
+        },
+        {
+          "label": "the second reply does not ask for the state she already gave",
+          "ok": true,
+          "detail": "Dear Dr. Raman,\n\nThank you for the update. It’s helpful to know you’ve signed up for the QME course and booked the exam for January. Mornings work well, and we’ll plan to suggest a morning time for a first conversation.\n\nBest regards,\n[Your name], Expedient recruiting"
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "payloadFrozen",
+      "started": "2026-10-01T20:13:28.759Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "A's task creation failed on the first attempt",
+          "ok": true,
+          "detail": "retry"
+        },
+        {
+          "label": "A's retry used A's own words, not B's",
+          "ok": true
+        },
+        {
+          "label": "B's inquiry carries B's words",
+          "ok": true
+        },
+        {
+          "label": "A's frozen payload is A's message",
+          "ok": true
+        },
+        {
+          "label": "A's saved reading quotes A's message",
+          "ok": true
+        },
+        {
+          "label": "one model call per submission",
+          "ok": true
+        },
+        {
+          "label": "one review task, B appended after A",
+          "ok": true
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
+          "ok": true
+        },
+        {
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
       "id": "taskFailsAfterUpdate",
-      "started": "2026-10-01T19:21:48.481Z",
+      "started": "2026-10-01T20:13:43.442Z",
       "passed": true,
       "checks": [
         {
@@ -300,7 +502,7 @@
           "ok": true
         },
         {
-          "label": "model called once, interpretation reused",
+          "label": "model called once, the saved reading reused",
           "ok": true
         },
         {
@@ -312,18 +514,62 @@
           "ok": true
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "says not licensed in California, and the reply does not ask about it",
+          "ok": true,
+          "detail": "Dear Dr. Park,\n\nThank you for reaching out. We can discuss the California requirements and how your background in physical medicine and rehabilitation may fit into QME work. I’m glad to hear weekdays after 5pm work for you, and we can use that to help set up a first conversation.\n\nPlease let me know if you’d like us to focus on the QME certification path or just the licensure-related question, and we’ll prepare accordingly.\n\nBest regards,\n[Your name], Expedient recruiting"
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "searchDownDuringRetry",
+      "started": "2026-10-01T20:13:59.611Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "contact search failed on the later polls",
+          "ok": true
+        },
+        {
+          "label": "the failure was logged by the poller",
+          "ok": true
+        },
+        {
+          "label": "the retry still ran and finished",
+          "ok": true
+        },
+        {
+          "label": "one review task",
+          "ok": true
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
+          "ok": true
+        },
+        {
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
       "id": "responseLost",
-      "started": "2026-10-01T19:22:03.508Z",
+      "started": "2026-10-01T20:14:16.997Z",
       "passed": true,
       "checks": [
         {
@@ -340,18 +586,30 @@
           "detail": "reconciled"
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "not read as exploring QME certification",
+          "ok": true,
+          "detail": {
+            "value": "other",
+            "evidence": "wanted to see what you offer"
+          }
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
       "id": "restartMidway",
-      "started": "2026-10-01T19:22:16.531Z",
+      "started": "2026-10-01T20:14:32.680Z",
       "passed": true,
       "checks": [
         {
@@ -372,37 +630,151 @@
           "ok": true
         },
         {
-          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "label": "every proposed reply has at least two sentences of content",
           "ok": true
         },
         {
-          "label": "proposed reply does not ask for phone, email or name",
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
           "ok": true
         }
       ]
     },
     {
-      "id": "givesUp",
-      "started": "2026-10-01T19:23:35.343Z",
+      "id": "staleWorker",
+      "started": "2026-10-01T20:15:53.446Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "a second attempt took over after the first one's lease expired",
+          "ok": true
+        },
+        {
+          "label": "the stalled attempt stopped when it woke up, without writing",
+          "ok": true
+        },
+        {
+          "label": "one contact update and one task: the stalled attempt wrote nothing to HubSpot",
+          "ok": true
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
+          "ok": true
+        },
+        {
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "paging",
+      "started": "2026-10-01T20:16:54.483Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "all six conversions scanned across three pages",
+          "ok": true,
+          "detail": "scanned 6 contacts on 3 page(s), 3 join inquiries"
+        },
+        {
+          "label": "only the three join inquiries recorded",
+          "ok": true
+        },
+        {
+          "label": "three review tasks, none for the webinar contacts",
+          "ok": true
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
+          "ok": true
+        },
+        {
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "taskBeyondFirstPage",
+      "started": "2026-10-01T20:17:05.647Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "associations read across three pages",
+          "ok": true,
+          "detail": 3
+        },
+        {
+          "label": "the inquiry was added to the open task found on the last page",
+          "ok": true
+        },
+        {
+          "label": "no new task created",
+          "ok": true
+        },
+        {
+          "label": "the High priority set by a person was kept",
+          "ok": true,
+          "detail": "HIGH"
+        },
+        {
+          "label": "every proposed reply has at least two sentences of content",
+          "ok": true
+        },
+        {
+          "label": "every proposed reply is signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
+          "label": "no proposed reply asks for phone, email or name",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "emptyReply",
+      "started": "2026-10-01T20:17:14.308Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "a model answer without a usable reply fails the attempt",
+          "ok": true,
+          "detail": "Check the interpretation: no usable proposed reply"
+        },
+        {
+          "label": "stopped after 3 attempts",
+          "ok": true
+        },
+        {
+          "label": "no task and no contact update written",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "contactReadsFail",
+      "started": "2026-10-01T20:17:41.756Z",
       "passed": true,
       "checks": [
         {
           "label": "stopped after 3 attempts",
           "ok": true,
-          "detail": {
-            "submission_key": "1000:1790882615436",
-            "status": "failed",
-            "attempts": 3,
-            "suggestions_written": false,
-            "task_id": null,
-            "task_action": null,
-            "last_step": "Read contact",
-            "last_error": "Read contact: 503",
-            "alerted": true
-          }
+          "detail": 3
         },
         {
-          "label": "one failure alert sent",
+          "label": "one failure alert delivered and recorded",
           "ok": true
         },
         {
@@ -415,6 +787,25 @@
         },
         {
           "label": "nothing written to HubSpot",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "alertFails",
+      "started": "2026-10-01T20:18:07.106Z",
+      "passed": true,
+      "checks": [
+        {
+          "label": "the first alert delivery failed and was not recorded as sent",
+          "ok": true
+        },
+        {
+          "label": "delivery retried until the endpoint accepted it",
+          "ok": true
+        },
+        {
+          "label": "recorded as sent only after the acknowledged delivery",
           "ok": true
         }
       ]

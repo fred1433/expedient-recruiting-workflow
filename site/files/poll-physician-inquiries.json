@@ -98,23 +98,54 @@
     },
     {
       "parameters": {
+        "jsCode": "// The poll scans a bounded window [checkpoint - overlap, now]. JOIN_FORM_NAME is mandatory:\n// without it every form on a physician's contact would count as a join inquiry.\nconst only = String($env.JOIN_FORM_NAME || '').trim();\nif (!only) throw new Error('JOIN_FORM_NAME is not set. Refusing to treat every form as a join inquiry.');\nconst cp = Number($input.first().json.checkpoint_ms);\nconst from = cp - Number($env.POLL_OVERLAP_MINUTES || 10) * 60000;\nconst to = Date.now();\n// Submission fields frozen at poll time. Keep in sync with the Configuration node of the\n// processing workflow.\nconst payloadProps = { firstName: 'firstname', lastName: 'lastname', credentials: 'physician_credentials', message: 'message' };\nconst body = {\n  filterGroups: [{ filters: [\n    { propertyName: 'recent_conversion_date', operator: 'GTE', value: String(from) },\n    { propertyName: 'recent_conversion_date', operator: 'LTE', value: String(to) },\n  ] }],\n  sorts: [{ propertyName: 'recent_conversion_date', direction: 'ASCENDING' }],\n  properties: ['recent_conversion_date', 'recent_conversion_event_name', ...Object.values(payloadProps)],\n  limit: Number($env.SEARCH_PAGE_SIZE || 100),\n};\nreturn [{ json: { from, to, only, payloadProps, body } }];\n"
+      },
+      "id": "n005-search-window",
+      "name": "Search window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        360
+      ]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "={{ $env.HUBSPOT_BASE_URL }}/crm/v3/objects/contacts/search",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "hubspotAppToken",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ filterGroups: [{ filters: [{ propertyName: 'recent_conversion_date', operator: 'GTE', value: String($json.checkpoint_ms - Number($env.POLL_OVERLAP_MINUTES || 10) * 60000) }] }], sorts: [{ propertyName: 'recent_conversion_date', direction: 'ASCENDING' }], properties: ['recent_conversion_date', 'recent_conversion_event_name'], limit: 100 }) }}",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
         "options": {
-          "timeout": 20000
+          "timeout": 20000,
+          "pagination": {
+            "pagination": {
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "after",
+                    "value": "={{ $response.body.paging?.next?.after }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.paging?.next?.after }}",
+              "limitPagesFetched": true,
+              "maxRequests": 50,
+              "requestInterval": 150
+            }
+          }
         }
       },
-      "id": "n005-find-recent-form-submissions",
+      "id": "n006-find-recent-form-submissions",
       "name": "Find recent form submissions",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        780,
+        1040,
         360
       ],
       "credentials": {
@@ -126,35 +157,35 @@
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 1500,
-      "onError": "stopWorkflow"
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "jsCode": "// One submission = one contact + the timestamp of its most recent form submission.\n// A physician who submits again gets a new key, so the new inquiry is processed.\n// JOIN_FORM_NAME (optional): keep only submissions whose recent conversion is the join form.\nconst only = String($env.JOIN_FORM_NAME || '').toLowerCase();\nconst rows = ($input.first().json.results || [])\n  .filter(r => r.properties && r.properties.recent_conversion_date)\n  .filter(r => !only || String(r.properties.recent_conversion_event_name || '').toLowerCase().includes(only))\n  .map(r => {\n    const ms = Date.parse(r.properties.recent_conversion_date) || Number(r.properties.recent_conversion_date);\n    return { submission_key: r.id + ':' + ms, contact_id: String(r.id), conversion_at: new Date(ms).toISOString() };\n  });\nreturn [{ json: { rows: JSON.stringify(rows), count: rows.length } }];"
+        "jsCode": "// One submission = one contact + the time of its most recent form conversion, with the form\n// fields frozen now (the contact's message property is overwritten by the next submission).\nconst w = $('Search window').first().json;\nconst only = w.only.toLowerCase();\nconst pages = $input.all().map(i => i.json);\nconst all = pages.flatMap(p => p.results || []);\nconst last = pages[pages.length - 1] || {};\nconst complete = !(last.paging && last.paging.next && last.paging.next.after);\nconst rows = [];\nlet lastScanned = 0;\nfor (const r of all) {\n  const p = r.properties || {};\n  const ms = Date.parse(p.recent_conversion_date) || Number(p.recent_conversion_date);\n  if (!ms) continue;\n  lastScanned = Math.max(lastScanned, ms);\n  if (!String(p.recent_conversion_event_name || '').toLowerCase().includes(only)) continue;\n  const payload = {};\n  for (const [k, prop] of Object.entries(w.payloadProps)) payload[k] = p[prop] ?? null;\n  rows.push({ submission_key: r.id + ':' + ms, contact_id: String(r.id), conversion_at: new Date(ms).toISOString(), payload });\n}\n// The scan checkpoint reaches the end of the window only when every page was read; otherwise\n// it stops at the last record scanned, and the next poll continues from there.\nconst checkpointMs = complete ? w.to : (lastScanned || w.from);\nreturn [{ json: {\n  rows: JSON.stringify(rows),\n  checkpoint: new Date(checkpointMs).toISOString(),\n  scan: 'scanned ' + all.length + ' contacts on ' + pages.length + ' page(s), ' + rows.length + ' join inquiries' + (complete ? '' : ', window not finished'),\n} }];\n"
       },
-      "id": "n006-list-submissions",
+      "id": "n007-list-submissions",
       "name": "List submissions",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1040,
+        1300,
         360
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "with seen as (\n  select * from jsonb_to_recordset($1::jsonb) as x(submission_key text, contact_id text, conversion_at timestamptz)),\nins as (\n  insert into recruiting.inquiry_ledger (submission_key, contact_id, conversion_at)\n  select submission_key, contact_id, conversion_at from seen\n  on conflict (submission_key) do nothing\n  returning submission_key),\nev as (\n  insert into recruiting.event_log (submission_key, step, outcome) select submission_key, 'poll', 'recorded' from ins),\ncp as (\n  update recruiting.poll_state\n     set checkpoint = greatest(checkpoint, coalesce((select max(conversion_at) from seen), checkpoint))\n   where id = 1 returning checkpoint)\nselect (select count(*) from ins) as new_submissions, (select checkpoint from cp) as checkpoint",
+        "query": "with seen as (\n  select * from jsonb_to_recordset($1::jsonb) as x(submission_key text, contact_id text, conversion_at timestamptz, payload jsonb)),\nins as (\n  insert into recruiting.inquiry_ledger (submission_key, contact_id, conversion_at, payload)\n  select submission_key, contact_id, conversion_at, payload from seen\n  on conflict (submission_key) do nothing\n  returning submission_key),\nev as (\n  insert into recruiting.event_log (submission_key, step, outcome) select submission_key, 'poll', 'recorded' from ins),\nscan as (\n  insert into recruiting.event_log (submission_key, step, outcome, detail) values (null, 'scan', 'ok', $3)),\ncp as (\n  update recruiting.poll_state set checkpoint = greatest(checkpoint, $2::timestamptz) where id = 1 returning checkpoint)\nselect (select count(*) from ins) as new_submissions, (select checkpoint from cp) as checkpoint",
         "options": {
-          "queryReplacement": "={{ [ $json.rows ] }}"
+          "queryReplacement": "={{ [ $json.rows, $json.checkpoint, $json.scan ] }}"
         }
       },
-      "id": "n007-record-submissions-once",
+      "id": "n008-record-submissions-once",
       "name": "Record submissions once",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1300,
+        1560,
         360
       ],
       "credentials": {
@@ -167,17 +198,40 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "with swept as (\n  -- stopped mid-processing too many times (crash, restart): give up loudly\n  update recruiting.inquiry_ledger\n     set status = 'failed', last_error = coalesce(last_error, 'stopped mid-processing'), updated_at = now()\n   where status = 'processing' and lease_until < now() and attempts >= $2\n  returning submission_key, contact_id, conversion_at, attempts, model_result, suggestions_written, task_id, last_error, 'alert'::text as kind),\nclaimable as (\n  select submission_key from recruiting.inquiry_ledger\n   where (status in ('pending', 'retry') and next_attempt_at <= now())\n      or (status = 'processing' and lease_until < now() and attempts < $2)\n   order by conversion_at\n   limit 20\n   for update skip locked),\nclaimed as (\n  update recruiting.inquiry_ledger l\n     set status = 'processing', attempts = l.attempts + 1,\n         lease_until = now() + make_interval(secs => $1), updated_at = now()\n    from claimable c\n   where l.submission_key = c.submission_key\n  returning l.submission_key, l.contact_id, l.conversion_at, l.attempts, l.model_result, l.suggestions_written, l.task_id, l.last_error, 'work'::text as kind),\nev as (\n  insert into recruiting.event_log (submission_key, step, outcome, detail)\n  select submission_key, 'claim', 'attempt ' || attempts, coalesce('resuming after: ' || last_error, null) from claimed\n  union all\n  select submission_key, 'claim', 'gave up', last_error from swept)\nselect * from claimed union all select * from swept",
+        "query": "insert into recruiting.event_log (submission_key, step, outcome, detail)\nvalues (null, 'search', 'failed', $1) returning id",
         "options": {
-          "queryReplacement": "={{ [ Number($env.LEASE_SECONDS || 300), Number($env.MAX_ATTEMPTS || 5) ] }}"
+          "queryReplacement": "={{ [ 'contact search failed (' + String(($json.error && ($json.error.httpCode || $json.error.status)) || 'no response') + '); recorded work is still serviced' ] }}"
         }
       },
-      "id": "n008-claim-work",
-      "name": "Claim work",
+      "id": "n009-note-search-failure",
+      "name": "Note search failure",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
         1560,
+        720
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (recruiting ledger)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "with swept as (\n  -- stopped mid-processing too many times (crash, restart): give up; the alert goes out below\n  update recruiting.inquiry_ledger\n     set status = 'failed', last_error = coalesce(last_error, 'stopped mid-processing'), lease_token = null,\n         alert_next_at = now(), updated_at = now()\n   where status = 'processing' and lease_until < now() and attempts >= $2\n  returning submission_key),\nclaimable as (\n  select l.submission_key from recruiting.inquiry_ledger l\n   where ((l.status in ('pending', 'retry') and l.next_attempt_at <= now())\n       or (l.status = 'processing' and l.lease_until < now() and l.attempts < $2))\n     and not exists (select 1 from recruiting.inquiry_ledger o\n                      where o.contact_id = l.contact_id and o.submission_key <> l.submission_key\n                        and o.status = 'processing' and o.lease_until >= now())\n   order by l.conversion_at\n   limit 5\n   for update skip locked),\nclaimed as (\n  update recruiting.inquiry_ledger l\n     set status = 'processing', attempts = l.attempts + 1, lease_token = gen_random_uuid(),\n         lease_until = now() + make_interval(secs => $1), updated_at = now()\n    from claimable c\n   where l.submission_key = c.submission_key\n  returning l.submission_key, l.contact_id, l.conversion_at, l.attempts, l.model_result, l.suggestions_written,\n            l.task_id, l.last_error, l.payload, l.lease_token::text as lease_token, 'work'::text as kind),\nalerts as (\n  select submission_key from recruiting.inquiry_ledger\n   where status = 'failed' and alerted_at is null and coalesce(alert_next_at, now()) <= now()\n   order by updated_at limit 5\n   for update skip locked),\nalerting as (\n  update recruiting.inquiry_ledger l\n     set alert_next_at = now() + interval '60 seconds'\n    from alerts a where l.submission_key = a.submission_key\n  returning l.submission_key, l.contact_id, l.conversion_at, l.attempts, null::jsonb as model_result, l.suggestions_written,\n            l.task_id, l.last_error, null::jsonb as payload, null::text as lease_token, 'alert'::text as kind),\nev as (\n  insert into recruiting.event_log (submission_key, step, outcome, detail)\n  select submission_key, 'claim', 'attempt ' || attempts, coalesce('resuming after: ' || last_error, null) from claimed\n  union all\n  select submission_key, 'claim', 'gave up', null from swept)\nselect * from claimed union all select * from alerting",
+        "options": {
+          "queryReplacement": "={{ [ Number($env.LEASE_SECONDS || 300), Number($env.MAX_ATTEMPTS || 5) ] }}"
+        }
+      },
+      "id": "n010-claim-work",
+      "name": "Claim work",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1820,
         360
       ],
       "credentials": {
@@ -212,12 +266,12 @@
         },
         "options": {}
       },
-      "id": "n009-gave-up-on-it-",
-      "name": "Gave up on it?",
+      "id": "n011-alert-to-send-",
+      "name": "Alert to send?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1820,
+        2080,
         360
       ]
     },
@@ -234,12 +288,12 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "n010-process-each-submission",
+      "id": "n012-process-each-submission",
       "name": "Process each submission",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.1,
       "position": [
-        2080,
+        2340,
         540
       ],
       "onError": "continueRegularOutput"
@@ -250,39 +304,59 @@
         "url": "={{ $env.ALERT_WEBHOOK_URL }}",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ text: 'Physician inquiry workflow: submission ' + $json.submission_key + ' was interrupted ' + $json.attempts + ' times and is no longer retried. Contact record ' + $json.contact_id + '. Nothing was sent to the physician.', submission_key: $json.submission_key, contact_id: $json.contact_id, last_error: $json.last_error, attempts: $json.attempts }) }}",
+        "jsonBody": "={{ JSON.stringify({ text: 'Physician inquiry workflow: submission ' + $json.submission_key + ' is no longer retried after ' + $json.attempts + ' attempts (last error: ' + ($json.last_error || 'interrupted') + '). Contact record ' + $json.contact_id + '. Nothing was sent to the physician. Check the execution and the ledger.', submission_key: $json.submission_key, contact_id: $json.contact_id, last_error: $json.last_error, attempts: $json.attempts }) }}",
         "options": {
           "timeout": 10000
         }
       },
-      "id": "n011-send-failure-alert",
+      "id": "n013-send-failure-alert",
       "name": "Send failure alert",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2080,
+        2340,
         180
       ],
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 2000,
-      "onError": "continueRegularOutput"
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "update recruiting.inquiry_ledger set alerted_at = now() where submission_key = $1 returning submission_key",
+        "query": "with u as (update recruiting.inquiry_ledger set alerted_at = now(), alert_last_error = null, updated_at = now()\n   where submission_key = $1 returning submission_key)\ninsert into recruiting.event_log (submission_key, step, outcome) select submission_key, 'alert', 'delivered' from u\nreturning submission_key",
         "options": {
-          "queryReplacement": "={{ [ $('Gave up on it?').item.json.submission_key ] }}"
+          "queryReplacement": "={{ [ $('Alert to send?').item.json.submission_key ] }}"
         }
       },
-      "id": "n012-mark-alerted",
+      "id": "n014-mark-alerted",
       "name": "Mark alerted",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        2340,
-        180
+        2600,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "ExpPostgres00001",
+          "name": "Postgres (recruiting ledger)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "with u as (update recruiting.inquiry_ledger\n     set alert_attempts = alert_attempts + 1, alert_last_error = $2,\n         alert_next_at = now() + make_interval(secs => least(3600, $3 * power(2, alert_attempts))::int), updated_at = now()\n   where submission_key = $1 returning submission_key, alert_attempts)\ninsert into recruiting.event_log (submission_key, step, outcome, detail)\nselect submission_key, 'alert', 'not delivered', $2 || ' (try ' || alert_attempts || ', will retry)' from u\nreturning submission_key",
+        "options": {
+          "queryReplacement": "={{ [ $('Alert to send?').item.json.submission_key, 'alert endpoint: ' + String(($json.error && ($json.error.httpCode || $json.error.status)) || 'no response'), Number($env.RETRY_BASE_SECONDS || 30) ] }}"
+        }
+      },
+      "id": "n015-mark-alert-pending",
+      "name": "Mark alert pending",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2600,
+        360
       ],
       "credentials": {
         "postgres": {
@@ -330,6 +404,17 @@
       "main": [
         [
           {
+            "node": "Search window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search window": {
+      "main": [
+        [
+          {
             "node": "Find recent form submissions",
             "type": "main",
             "index": 0
@@ -342,6 +427,13 @@
         [
           {
             "node": "List submissions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Note search failure",
             "type": "main",
             "index": 0
           }
@@ -370,18 +462,29 @@
         ]
       ]
     },
-    "Claim work": {
+    "Note search failure": {
       "main": [
         [
           {
-            "node": "Gave up on it?",
+            "node": "Claim work",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gave up on it?": {
+    "Claim work": {
+      "main": [
+        [
+          {
+            "node": "Alert to send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert to send?": {
       "main": [
         [
           {
@@ -407,13 +510,21 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Mark alert pending",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     }
   },
   "settings": {
     "executionOrder": "v1",
-    "saveManualExecutions": true
+    "saveManualExecutions": true,
+    "errorWorkflow": "ExpInqErrAlert01"
   },
   "pinData": {},
   "active": false,

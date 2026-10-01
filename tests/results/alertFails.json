@@ -1,0 +1,450 @@
+{
+  "id": "alertFails",
+  "started": "2026-10-01T20:18:07.106Z",
+  "n8n": "2.42.2",
+  "checks": [
+    {
+      "label": "the first alert delivery failed and was not recorded as sent",
+      "ok": true
+    },
+    {
+      "label": "delivery retried until the endpoint accepted it",
+      "ok": true
+    },
+    {
+      "label": "recorded as sent only after the acknowledged delivery",
+      "ok": true
+    }
+  ],
+  "contacts": [
+    {
+      "id": "1000",
+      "properties": {
+        "hs_object_id": "1000",
+        "email": "gliu@example.test",
+        "first_conversion_date": "2026-10-01T20:18:07.172Z",
+        "createdate": "2026-10-01T20:18:07.172Z",
+        "firstname": "Grace",
+        "lastname": "Liu",
+        "physician_credentials": "M.D.",
+        "phone": "(555) 010-8864",
+        "message": "A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer.",
+        "recent_conversion_date": "2026-10-01T20:18:07.172Z",
+        "recent_conversion_event_name": "Join Expedient"
+      },
+      "createdAt": "2026-10-01T20:18:07.172Z",
+      "updatedAt": "2026-10-01T20:18:07.172Z"
+    }
+  ],
+  "tasks": [],
+  "assoc": {},
+  "alerts": [
+    {
+      "at": "2026-10-01T20:18:52.495Z",
+      "body": {
+        "text": "Physician inquiry workflow: submission 1000:1790885887172 is no longer retried after 3 attempts (last error: Read contact: 503). Contact record 1000. Nothing was sent to the physician. Check the execution and the ledger.",
+        "submission_key": "1000:1790885887172",
+        "contact_id": "1000",
+        "last_error": "Read contact: 503",
+        "attempts": 3
+      }
+    }
+  ],
+  "modelCalls": [],
+  "http": [
+    {
+      "at": "2026-10-01T20:18:07.251Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:18:07.418Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "fault": "error",
+      "status": 503
+    },
+    {
+      "at": "2026-10-01T20:18:08.930Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "fault": "error",
+      "status": 503
+    },
+    {
+      "at": "2026-10-01T20:18:10.446Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "fault": "error",
+      "status": 503
+    },
+    {
+      "at": "2026-10-01T20:18:16.306Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:18:16.370Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "fault": "error",
+      "status": 503
+    },
+    {
+      "at": "2026-10-01T20:18:17.889Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "fault": "error",
+      "status": 503
+    },
+    {
+      "at": "2026-10-01T20:18:19.401Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "fault": "error",
+      "status": 503
+    },
+    {
+      "at": "2026-10-01T20:18:25.514Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:18:25.574Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "fault": "error",
+      "status": 503
+    },
+    {
+      "at": "2026-10-01T20:18:27.090Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "fault": "error",
+      "status": 503
+    },
+    {
+      "at": "2026-10-01T20:18:28.611Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "fault": "error",
+      "status": 503
+    },
+    {
+      "at": "2026-10-01T20:18:28.632Z",
+      "method": "POST",
+      "path": "/hooks/alert",
+      "status": 500,
+      "fault": "error"
+    },
+    {
+      "at": "2026-10-01T20:18:32.232Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:18:32.264Z",
+      "method": "POST",
+      "path": "/hooks/alert",
+      "status": 500,
+      "fault": "error"
+    },
+    {
+      "at": "2026-10-01T20:18:38.963Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:18:38.990Z",
+      "method": "POST",
+      "path": "/hooks/alert",
+      "status": 500,
+      "fault": "error"
+    },
+    {
+      "at": "2026-10-01T20:18:45.719Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:18:52.473Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:18:52.495Z",
+      "method": "POST",
+      "path": "/hooks/alert",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:18:54.056Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    }
+  ],
+  "ledger": [
+    {
+      "submission_key": "1000:1790885887172",
+      "status": "failed",
+      "attempts": 3,
+      "suggestions_written": false,
+      "task_id": null,
+      "task_action": null,
+      "last_step": "Read contact",
+      "last_error": "Read contact: 503",
+      "alerted": true,
+      "alert_attempts": 3,
+      "payload": {
+        "message": "A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer.",
+        "lastName": "Liu",
+        "firstName": "Grace",
+        "credentials": "M.D."
+      },
+      "model_result": null
+    }
+  ],
+  "events": [
+    {
+      "at": "20:18:07.273",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:18:07.273",
+      "submission_key": "1000:1790885887172",
+      "step": "poll",
+      "outcome": "recorded",
+      "detail": null
+    },
+    {
+      "at": "20:18:07.279",
+      "submission_key": "1000:1790885887172",
+      "step": "claim",
+      "outcome": "attempt 1",
+      "detail": null
+    },
+    {
+      "at": "20:18:10.459",
+      "submission_key": "1000:1790885887172",
+      "step": "Read contact",
+      "outcome": "failed",
+      "detail": "503 (attempt 1, now retry)"
+    },
+    {
+      "at": "20:18:16.316",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:18:16.322",
+      "submission_key": "1000:1790885887172",
+      "step": "claim",
+      "outcome": "attempt 2",
+      "detail": "resuming after: Read contact: 503"
+    },
+    {
+      "at": "20:18:19.415",
+      "submission_key": "1000:1790885887172",
+      "step": "Read contact",
+      "outcome": "failed",
+      "detail": "503 (attempt 2, now retry)"
+    },
+    {
+      "at": "20:18:25.525",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:18:25.530",
+      "submission_key": "1000:1790885887172",
+      "step": "claim",
+      "outcome": "attempt 3",
+      "detail": "resuming after: Read contact: 503"
+    },
+    {
+      "at": "20:18:28.627",
+      "submission_key": "1000:1790885887172",
+      "step": "Read contact",
+      "outcome": "failed",
+      "detail": "503 (attempt 3, now failed)"
+    },
+    {
+      "at": "20:18:28.645",
+      "submission_key": "1000:1790885887172",
+      "step": "alert",
+      "outcome": "not delivered",
+      "detail": "alert endpoint: 500 (try 1, will retry)"
+    },
+    {
+      "at": "20:18:32.248",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:18:32.273",
+      "submission_key": "1000:1790885887172",
+      "step": "alert",
+      "outcome": "not delivered",
+      "detail": "alert endpoint: 500 (try 2, will retry)"
+    },
+    {
+      "at": "20:18:38.979",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:18:38.994",
+      "submission_key": "1000:1790885887172",
+      "step": "alert",
+      "outcome": "not delivered",
+      "detail": "alert endpoint: 500 (try 3, will retry)"
+    },
+    {
+      "at": "20:18:45.732",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:18:52.484",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:18:52.502",
+      "submission_key": "1000:1790885887172",
+      "step": "alert",
+      "outcome": "delivered",
+      "detail": null
+    },
+    {
+      "at": "20:18:54.067",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    }
+  ],
+  "executions": [
+    {
+      "id": 802,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:18:07",
+      "stopped": "20:18:10"
+    },
+    {
+      "id": 803,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "error",
+      "started": "20:18:07",
+      "stopped": "20:18:10"
+    },
+    {
+      "id": 804,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:18:16",
+      "stopped": "20:18:19"
+    },
+    {
+      "id": 805,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "error",
+      "started": "20:18:16",
+      "stopped": "20:18:19"
+    },
+    {
+      "id": 806,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:18:25",
+      "stopped": "20:18:28"
+    },
+    {
+      "id": 807,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "error",
+      "started": "20:18:25",
+      "stopped": "20:18:28"
+    },
+    {
+      "id": 808,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:18:32",
+      "stopped": "20:18:32"
+    },
+    {
+      "id": 809,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:18:38",
+      "stopped": "20:18:38"
+    },
+    {
+      "id": 810,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:18:45",
+      "stopped": "20:18:45"
+    },
+    {
+      "id": 811,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:18:52",
+      "stopped": "20:18:52"
+    },
+    {
+      "id": 812,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:18:54",
+      "stopped": "20:18:54"
+    }
+  ],
+  "ledgerAfterGiveUp": [
+    {
+      "submission_key": "1000:1790885887172",
+      "status": "failed",
+      "attempts": 3,
+      "suggestions_written": false,
+      "task_id": null,
+      "task_action": null,
+      "last_step": "Read contact",
+      "last_error": "Read contact: 503",
+      "alerted": false,
+      "alert_attempts": 1,
+      "payload": {
+        "message": "A colleague mentioned your group. I do a lot of pain management and wanted to see what you offer.",
+        "lastName": "Liu",
+        "firstName": "Grace",
+        "credentials": "M.D."
+      },
+      "model_result": null
+    }
+  ]
+}

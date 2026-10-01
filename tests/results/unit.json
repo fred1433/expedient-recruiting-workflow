@@ -1,0 +1,123 @@
+{
+  "ranAt": "2026-10-01T20:11:51.099Z",
+  "passed": 13,
+  "total": 13,
+  "checks": [
+    {
+      "label": "a state the quote does not name is dropped",
+      "ok": true,
+      "detail": [
+        "unsupported:license_states (CA is not named in the quote)",
+        "clarify:license_state_not_stated"
+      ]
+    },
+    {
+      "label": "a negated state is refused as a licence and kept as 'not licensed in'",
+      "ok": true,
+      "detail": {
+        "specialty": {
+          "value": null,
+          "evidence": null
+        },
+        "license_states": {
+          "value": null,
+          "evidence": null
+        },
+        "states_not_licensed": {
+          "value": [
+            "CA"
+          ],
+          "evidence": "not licensed in California yet"
+        },
+        "certification_statement": {
+          "value": "not_stated",
+          "evidence": null
+        },
+        "intent": {
+          "value": "unclear",
+          "evidence": null
+        },
+        "call_availability": {
+          "value": null,
+          "evidence": null
+        },
+        "questions": [],
+        "ambiguities": [],
+        "flags": [
+          "unsupported:license_states (CA is negated in the quote)",
+          "clarify:not_licensed_in_california"
+        ],
+        "source": "model",
+        "proposed_reply": "Dear Dr. Case,\n\nThank you for writing to us about QME work. We would be glad to set up a first conversation and the team will propose a time.\n\nBest regards,\n[Your name], Expedient recruiting",
+        "review_status": "needs_clarification"
+      }
+    },
+    {
+      "label": "a channel preference is not kept as a call window",
+      "ok": true,
+      "detail": {
+        "value": null,
+        "evidence": null
+      }
+    },
+    {
+      "label": "'explore QME certification' needs a quote about QME or certification",
+      "ok": true,
+      "detail": {
+        "value": "unclear",
+        "evidence": null
+      }
+    },
+    {
+      "label": "'established QME' needs a stated current certification",
+      "ok": true,
+      "detail": {
+        "value": "unclear",
+        "evidence": null
+      }
+    },
+    {
+      "label": "a non-array state value from an unrelated quote is dropped",
+      "ok": true
+    },
+    {
+      "label": "a question about licensure the message already answered is dropped, a question about plans is kept",
+      "ok": true,
+      "detail": [
+        "Whether they plan to apply for a California license",
+        "Whether they are already QME certified"
+      ]
+    },
+    {
+      "label": "a reply with no content fails the attempt, even though a signature would be added",
+      "ok": true,
+      "detail": "No usable proposed reply in the model output"
+    },
+    {
+      "label": "Sunday 6 p.m. Pacific is due Monday 10:00 Pacific",
+      "ok": true,
+      "detail": "Mon, Oct 5, 10:00"
+    },
+    {
+      "label": "Tuesday Dec 1, 10 a.m. Pacific is due Wednesday Dec 2, 10:00 Pacific",
+      "ok": true,
+      "detail": "Wed, Dec 2, 10:00"
+    },
+    {
+      "label": "Friday evening Pacific is due Monday 10:00 Pacific",
+      "ok": true,
+      "detail": "Mon, Oct 5, 10:00"
+    },
+    {
+      "label": "an ordinary append sends no priority (a High task stays High)",
+      "ok": true,
+      "detail": {
+        "hs_task_body": "<p>x expedient-inquiry-review ref:1:0</p><hr><p><b>New inquiry from the same physician</b>, received 2026-10-05 01:00 UTC</p><p><b>Ready for review</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>m</p><p><b>Suggested reading, from their own words</b><br>Specialty: <i>not stated</i><br>Licensed in: <i>not stated</i><br>Certification: not stated<br>Looking for: unclear<br>Available for a first call: <i>not stated</i> (a call window, not evaluation capacity)</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Hello,<br><br>Text.<br><br>Best regards,<br>[Your name], Expedient recruiting</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1:1</p>"
+      }
+    },
+    {
+      "label": "an append that brings a conflict raises priority to High",
+      "ok": true
+    }
+  ]
+}

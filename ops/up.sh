@@ -40,8 +40,10 @@ PY
 dc exec -T n8n n8n import:credentials --input=/import/runtime/credentials.json
 dc exec -T n8n n8n import:workflow --input=/import/workflows/process-physician-inquiry.json
 dc exec -T n8n n8n import:workflow --input=/import/workflows/poll-physician-inquiries.json
+dc exec -T n8n n8n import:workflow --input=/import/workflows/workflow-error-alert.json
 dc exec -T n8n n8n publish:workflow --id=ExpInqProcess001
 dc exec -T n8n n8n publish:workflow --id=ExpInqPoller0001
+dc exec -T n8n n8n publish:workflow --id=ExpInqErrAlert01
 dc restart n8n
 for i in $(seq 1 90); do
   curl -sf "http://127.0.0.1:$N8N_PORT/healthz" >/dev/null && break

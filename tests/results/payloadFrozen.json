@@ -1,0 +1,569 @@
+{
+  "id": "payloadFrozen",
+  "started": "2026-10-01T20:13:28.759Z",
+  "n8n": "2.42.2",
+  "checks": [
+    {
+      "label": "A's task creation failed on the first attempt",
+      "ok": true,
+      "detail": "retry"
+    },
+    {
+      "label": "A's retry used A's own words, not B's",
+      "ok": true
+    },
+    {
+      "label": "B's inquiry carries B's words",
+      "ok": true
+    },
+    {
+      "label": "A's frozen payload is A's message",
+      "ok": true
+    },
+    {
+      "label": "A's saved reading quotes A's message",
+      "ok": true
+    },
+    {
+      "label": "one model call per submission",
+      "ok": true
+    },
+    {
+      "label": "one review task, B appended after A",
+      "ok": true
+    },
+    {
+      "label": "every proposed reply has at least two sentences of content",
+      "ok": true
+    },
+    {
+      "label": "every proposed reply is signed [Your name], Expedient recruiting",
+      "ok": true
+    },
+    {
+      "label": "no proposed reply asks for phone, email or name",
+      "ok": true
+    }
+  ],
+  "contacts": [
+    {
+      "id": "1000",
+      "properties": {
+        "hs_object_id": "1000",
+        "email": "p.raman@example.test",
+        "first_conversion_date": "2026-10-01T20:03:28.850Z",
+        "createdate": "2026-10-01T20:03:28.850Z",
+        "firstname": "Priya",
+        "lastname": "Raman",
+        "physician_credentials": "M.D.",
+        "phone": "(555) 010-2231",
+        "message": "Quick update to my note from this morning: I've now signed up for the QME course and booked the exam for January. Mornings work better for a call now.",
+        "recent_conversion_date": "2026-10-01T20:13:35.988Z",
+        "recent_conversion_event_name": "Join Expedient",
+        "ai_inquiry_specialty": "not stated",
+        "ai_inquiry_license_states": "not stated",
+        "ai_inquiry_certification_statement": "says_in_progress",
+        "ai_inquiry_intent": "explore_qme_certification",
+        "ai_inquiry_call_availability": "Mornings work better for a call now.",
+        "ai_inquiry_review_status": "ready_for_review",
+        "ai_inquiry_flags": "none",
+        "ai_inquiry_ref": "1000:1790885615988"
+      },
+      "createdAt": "2026-10-01T20:03:28.850Z",
+      "updatedAt": "2026-10-01T20:13:40.010Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "1001",
+      "properties": {
+        "hs_object_id": "1001",
+        "hs_createdate": "2026-10-01T20:13:36.283Z",
+        "hs_task_subject": "Physician inquiry: Priya Raman, M.D. (review and reply)",
+        "hs_task_body": "<p><b>Ready for review</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>I'm a board-certified psychiatrist, licensed in California, and I'd like to start doing QME evaluations alongside my practice. I'm not a QME yet and haven't taken the course. I'm free for a call on Thursday afternoons. What does the preparation involve?</p><p><b>Suggested reading, from their own words</b><br>Specialty: psychiatrist <span style=\"color:#666\">(\"I'm a board-certified psychiatrist\")</span><br>Licensed in: CA <span style=\"color:#666\">(\"licensed in California\")</span><br>Certification: says they are not certified <span style=\"color:#666\">(\"I'm not a QME yet and haven't taken the course\")</span><br>Looking for: exploring QME certification <span style=\"color:#666\">(\"I'd like to start doing QME evaluations alongside my practice\")</span><br>Available for a first call: Thursday afternoons <span style=\"color:#666\">(\"I'm free for a call on Thursday afternoons\")</span> (a call window, not evaluation capacity)</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Raman,<br><br>Thank you for reaching out. We are happy to talk through what preparation for QME work typically involves, including the course and the steps to get started.<br><br>Thursday afternoons work well. Please let us know if there is a particular Thursday afternoon window that is best for you, and we will do our best to coordinate a first conversation.<br><br>Best regards,<br>[Your name], Expedient recruiting</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790885008850</p><hr><p><b>New inquiry from the same physician</b>, received 2026-10-01 20:13 UTC</p><p><b>Ready for review</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>Quick update to my note from this morning: I've now signed up for the QME course and booked the exam for January. Mornings work better for a call now.</p><p><b>Suggested reading, from their own words</b><br>Specialty: <i>not stated</i><br>Licensed in: <i>not stated</i><br>Certification: says certification is in progress <span style=\"color:#666\">(\"I've now signed up for the QME course and booked the exam for January\")</span><br>Looking for: exploring QME certification <span style=\"color:#666\">(\"I've now signed up for the QME course and booked the exam for January\")</span><br>Available for a first call: Mornings work better for a call now. <span style=\"color:#666\">(\"Mornings work better for a call now\")</span> (a call window, not evaluation capacity)</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Raman,<br><br>Thank you for the update. It’s helpful to know you’ve signed up for the QME course and booked the exam for January. We also noted that mornings work better for a call now.<br><br>We’d be glad to set up a first conversation and can suggest a time that fits your morning availability.<br><br>Best regards,<br>[Your name], Expedient recruiting</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790885615988</p>",
+        "hs_task_status": "NOT_STARTED",
+        "hs_task_priority": "MEDIUM",
+        "hs_task_type": "TODO",
+        "hs_timestamp": "2026-10-02T17:00:00.000Z",
+        "hubspot_owner_id": "900001"
+      },
+      "createdAt": "2026-10-01T20:13:36.283Z",
+      "updatedAt": "2026-10-01T20:13:40.067Z"
+    }
+  ],
+  "assoc": {
+    "1000": [
+      "1001"
+    ]
+  },
+  "alerts": [],
+  "modelCalls": [
+    {
+      "at": "2026-10-01T20:13:28.985Z",
+      "mode": "proxy",
+      "model": "gpt-5.4-mini-2026-03-17",
+      "fieldsSent": [
+        "credentials",
+        "message",
+        "known_to_team",
+        "previously_stated"
+      ],
+      "bytesSent": 333,
+      "status": 200,
+      "ms": 3339,
+      "content": "{\n  \"specialty\": {\n    \"value\": \"psychiatrist\",\n    \"evidence\": \"I'm a board-certified psychiatrist\"\n  },\n  \"license_states\": {\n    \"value\": [\n      \"CA\"\n    ],\n    \"evidence\": \"licensed in California\"\n  },\n  \"states_not_licensed\": {\n    \"value\": null,\n    \"evidence\": null\n  },\n  \"certification_statement\": {\n    \"value\": \"says_not_certified\",\n    \"evidence\": \"I'm not a QME yet and haven't taken the course\"\n  },\n  \"intent\": {\n    \"value\": \"explore_qme_certification\",\n    \"evidence\": \"I'd like to start doing QME evaluations alongside my practice\"\n  },\n  \"call_availability\": {\n    \"value\": \"Thursday afternoons\",\n    \"evidence\": \"I'm free for a call on Thursday afternoons\"\n  },\n  \"questions\": [\n    \"What does the preparation involve?\"\n  ],\n  \"ambiguities\": [],\n  \"proposed_reply\": \"Hello,\\n\\nThank you for reaching out. We are happy to talk through what preparation for QME work typically involves, including the course and the steps to get started.\\n\\nThursday afternoons work well. Please let us know if there is a particular Thursday afternoon window that is best for you, and we will do our best to coordinate a first conversation.\\n\\nBest regards,\"\n}",
+      "servedModel": "gpt-5.4-mini-2026-03-17",
+      "usage": {
+        "prompt_tokens": 1263,
+        "completion_tokens": 380,
+        "total_tokens": 1643,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 72,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    },
+    {
+      "at": "2026-10-01T20:13:36.387Z",
+      "mode": "proxy",
+      "model": "gpt-5.4-mini-2026-03-17",
+      "fieldsSent": [
+        "credentials",
+        "message",
+        "known_to_team",
+        "previously_stated"
+      ],
+      "bytesSent": 280,
+      "status": 200,
+      "ms": 3587,
+      "content": "{\"specialty\":{\"value\":null,\"evidence\":null},\"license_states\":{\"value\":null,\"evidence\":null},\"states_not_licensed\":{\"value\":null,\"evidence\":null},\"certification_statement\":{\"value\":\"says_in_progress\",\"evidence\":\"\\\"I've now signed up for the QME course and booked the exam for January.\\\"\"},\"intent\":{\"value\":\"explore_qme_certification\",\"evidence\":\"\\\"I've now signed up for the QME course and booked the exam for January.\\\"\"},\"call_availability\":{\"value\":\"Mornings work better for a call now.\",\"evidence\":\"\\\"Mornings work better for a call now.\\\"\"},\"questions\":[],\"ambiguities\":[],\"proposed_reply\":\"Hello,\\n\\nThank you for the update. It’s helpful to know you’ve signed up for the QME course and booked the exam for January. We also noted that mornings work better for a call now.\\n\\nWe’d be glad to set up a first conversation and can suggest a time that fits your morning availability.\\n\\nBest regards,\"}",
+      "servedModel": "gpt-5.4-mini-2026-03-17",
+      "usage": {
+        "prompt_tokens": 1259,
+        "completion_tokens": 363,
+        "total_tokens": 1622,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "audio_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 131,
+          "audio_tokens": 0,
+          "accepted_prediction_tokens": 0,
+          "rejected_prediction_tokens": 0
+        }
+      }
+    }
+  ],
+  "http": [
+    {
+      "at": "2026-10-01T20:13:28.892Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:28.960Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:28.985Z",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:32.367Z",
+      "method": "PATCH",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:32.391Z",
+      "method": "GET",
+      "path": "/crm/v4/objects/contacts/1000/associations/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:32.419Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/tasks",
+      "fault": "error",
+      "status": 502
+    },
+    {
+      "at": "2026-10-01T20:13:36.092Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/contacts/search",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:36.214Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:36.256Z",
+      "method": "GET",
+      "path": "/crm/v4/objects/contacts/1000/associations/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:36.283Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/tasks",
+      "status": 201
+    },
+    {
+      "at": "2026-10-01T20:13:36.359Z",
+      "method": "GET",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:36.387Z",
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:40.010Z",
+      "method": "PATCH",
+      "path": "/crm/v3/objects/contacts/1000",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:40.030Z",
+      "method": "GET",
+      "path": "/crm/v4/objects/contacts/1000/associations/tasks",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:40.045Z",
+      "method": "POST",
+      "path": "/crm/v3/objects/tasks/batch/read",
+      "status": 200
+    },
+    {
+      "at": "2026-10-01T20:13:40.067Z",
+      "method": "PATCH",
+      "path": "/crm/v3/objects/tasks/1001",
+      "status": 200
+    }
+  ],
+  "ledger": [
+    {
+      "submission_key": "1000:1790885008850",
+      "status": "done",
+      "attempts": 2,
+      "suggestions_written": true,
+      "task_id": "1001",
+      "task_action": "created",
+      "last_step": "done",
+      "last_error": "Create review task: 502",
+      "alerted": false,
+      "alert_attempts": 0,
+      "payload": {
+        "message": "I'm a board-certified psychiatrist, licensed in California, and I'd like to start doing QME evaluations alongside my practice. I'm not a QME yet and haven't taken the course. I'm free for a call on Thursday afternoons. What does the preparation involve?",
+        "lastName": "Raman",
+        "firstName": "Priya",
+        "credentials": "M.D."
+      },
+      "model_result": {
+        "flags": [],
+        "intent": {
+          "value": "explore_qme_certification",
+          "evidence": "I'd like to start doing QME evaluations alongside my practice"
+        },
+        "source": "model",
+        "questions": [
+          "What does the preparation involve?"
+        ],
+        "specialty": {
+          "value": "psychiatrist",
+          "evidence": "I'm a board-certified psychiatrist"
+        },
+        "ambiguities": [],
+        "review_status": "ready_for_review",
+        "license_states": {
+          "value": [
+            "CA"
+          ],
+          "evidence": "licensed in California"
+        },
+        "proposed_reply": "Dear Dr. Raman,\n\nThank you for reaching out. We are happy to talk through what preparation for QME work typically involves, including the course and the steps to get started.\n\nThursday afternoons work well. Please let us know if there is a particular Thursday afternoon window that is best for you, and we will do our best to coordinate a first conversation.\n\nBest regards,\n[Your name], Expedient recruiting",
+        "call_availability": {
+          "value": "Thursday afternoons",
+          "evidence": "I'm free for a call on Thursday afternoons"
+        },
+        "states_not_licensed": {
+          "value": null,
+          "evidence": null
+        },
+        "certification_statement": {
+          "value": "says_not_certified",
+          "evidence": "I'm not a QME yet and haven't taken the course"
+        }
+      }
+    },
+    {
+      "submission_key": "1000:1790885615988",
+      "status": "done",
+      "attempts": 1,
+      "suggestions_written": true,
+      "task_id": "1001",
+      "task_action": "appended",
+      "last_step": "done",
+      "last_error": null,
+      "alerted": false,
+      "alert_attempts": 0,
+      "payload": {
+        "message": "Quick update to my note from this morning: I've now signed up for the QME course and booked the exam for January. Mornings work better for a call now.",
+        "lastName": "Raman",
+        "firstName": "Priya",
+        "credentials": "M.D."
+      },
+      "model_result": {
+        "flags": [],
+        "intent": {
+          "value": "explore_qme_certification",
+          "evidence": "I've now signed up for the QME course and booked the exam for January"
+        },
+        "source": "model",
+        "questions": [],
+        "specialty": {
+          "value": null,
+          "evidence": null
+        },
+        "ambiguities": [],
+        "review_status": "ready_for_review",
+        "license_states": {
+          "value": null,
+          "evidence": null
+        },
+        "proposed_reply": "Dear Dr. Raman,\n\nThank you for the update. It’s helpful to know you’ve signed up for the QME course and booked the exam for January. We also noted that mornings work better for a call now.\n\nWe’d be glad to set up a first conversation and can suggest a time that fits your morning availability.\n\nBest regards,\n[Your name], Expedient recruiting",
+        "call_availability": {
+          "value": "Mornings work better for a call now.",
+          "evidence": "Mornings work better for a call now"
+        },
+        "states_not_licensed": {
+          "value": null,
+          "evidence": null
+        },
+        "certification_statement": {
+          "value": "says_in_progress",
+          "evidence": "I've now signed up for the QME course and booked the exam for January"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "at": "20:13:28.906",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:13:28.906",
+      "submission_key": "1000:1790885008850",
+      "step": "poll",
+      "outcome": "recorded",
+      "detail": null
+    },
+    {
+      "at": "20:13:28.912",
+      "submission_key": "1000:1790885008850",
+      "step": "claim",
+      "outcome": "attempt 1",
+      "detail": null
+    },
+    {
+      "at": "20:13:32.344",
+      "submission_key": "1000:1790885008850",
+      "step": "interpret",
+      "outcome": "saved",
+      "detail": "model:ready_for_review"
+    },
+    {
+      "at": "20:13:32.374",
+      "submission_key": "1000:1790885008850",
+      "step": "suggestions",
+      "outcome": "written",
+      "detail": null
+    },
+    {
+      "at": "20:13:32.455",
+      "submission_key": "1000:1790885008850",
+      "step": "Create review task",
+      "outcome": "failed",
+      "detail": "502 (attempt 1, now retry)"
+    },
+    {
+      "at": "20:13:36.154",
+      "submission_key": null,
+      "step": "scan",
+      "outcome": "ok",
+      "detail": "scanned 1 contacts on 1 page(s), 1 join inquiries"
+    },
+    {
+      "at": "20:13:36.154",
+      "submission_key": "1000:1790885615988",
+      "step": "poll",
+      "outcome": "recorded",
+      "detail": null
+    },
+    {
+      "at": "20:13:36.164",
+      "submission_key": "1000:1790885008850",
+      "step": "claim",
+      "outcome": "attempt 2",
+      "detail": "resuming after: Create review task: 502"
+    },
+    {
+      "at": "20:13:36.164",
+      "submission_key": "1000:1790885615988",
+      "step": "claim",
+      "outcome": "attempt 1",
+      "detail": null
+    },
+    {
+      "at": "20:13:36.237",
+      "submission_key": "1000:1790885008850",
+      "step": "interpret",
+      "outcome": "reused",
+      "detail": "model:ready_for_review"
+    },
+    {
+      "at": "20:13:36.295",
+      "submission_key": "1000:1790885008850",
+      "step": "task",
+      "outcome": "done",
+      "detail": "created 1001"
+    },
+    {
+      "at": "20:13:39.993",
+      "submission_key": "1000:1790885615988",
+      "step": "interpret",
+      "outcome": "saved",
+      "detail": "model:ready_for_review"
+    },
+    {
+      "at": "20:13:40.016",
+      "submission_key": "1000:1790885615988",
+      "step": "suggestions",
+      "outcome": "written",
+      "detail": null
+    },
+    {
+      "at": "20:13:40.078",
+      "submission_key": "1000:1790885615988",
+      "step": "task",
+      "outcome": "done",
+      "detail": "appended 1001"
+    }
+  ],
+  "executions": [
+    {
+      "id": 757,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:13:28",
+      "stopped": "20:13:32"
+    },
+    {
+      "id": 758,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "error",
+      "started": "20:13:28",
+      "stopped": "20:13:32"
+    },
+    {
+      "id": 759,
+      "workflow": "Physician inquiry: poll HubSpot form submissions",
+      "status": "success",
+      "started": "20:13:36",
+      "stopped": "20:13:40"
+    },
+    {
+      "id": 760,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "success",
+      "started": "20:13:36",
+      "stopped": "20:13:36"
+    },
+    {
+      "id": 761,
+      "workflow": "Physician inquiry: process one submission",
+      "status": "success",
+      "started": "20:13:36",
+      "stopped": "20:13:40"
+    }
+  ],
+  "ledgerAfterFirstAttempt": [
+    {
+      "submission_key": "1000:1790885008850",
+      "status": "retry",
+      "attempts": 1,
+      "suggestions_written": true,
+      "task_id": null,
+      "task_action": null,
+      "last_step": "Create review task",
+      "last_error": "Create review task: 502",
+      "alerted": false,
+      "alert_attempts": 0,
+      "payload": {
+        "message": "I'm a board-certified psychiatrist, licensed in California, and I'd like to start doing QME evaluations alongside my practice. I'm not a QME yet and haven't taken the course. I'm free for a call on Thursday afternoons. What does the preparation involve?",
+        "lastName": "Raman",
+        "firstName": "Priya",
+        "credentials": "M.D."
+      },
+      "model_result": {
+        "flags": [],
+        "intent": {
+          "value": "explore_qme_certification",
+          "evidence": "I'd like to start doing QME evaluations alongside my practice"
+        },
+        "source": "model",
+        "questions": [
+          "What does the preparation involve?"
+        ],
+        "specialty": {
+          "value": "psychiatrist",
+          "evidence": "I'm a board-certified psychiatrist"
+        },
+        "ambiguities": [],
+        "review_status": "ready_for_review",
+        "license_states": {
+          "value": [
+            "CA"
+          ],
+          "evidence": "licensed in California"
+        },
+        "proposed_reply": "Dear Dr. Raman,\n\nThank you for reaching out. We are happy to talk through what preparation for QME work typically involves, including the course and the steps to get started.\n\nThursday afternoons work well. Please let us know if there is a particular Thursday afternoon window that is best for you, and we will do our best to coordinate a first conversation.\n\nBest regards,\n[Your name], Expedient recruiting",
+        "call_availability": {
+          "value": "Thursday afternoons",
+          "evidence": "I'm free for a call on Thursday afternoons"
+        },
+        "states_not_licensed": {
+          "value": null,
+          "evidence": null
+        },
+        "certification_statement": {
+          "value": "says_not_certified",
+          "evidence": "I'm not a QME yet and haven't taken the course"
+        }
+      }
+    }
+  ]
+}

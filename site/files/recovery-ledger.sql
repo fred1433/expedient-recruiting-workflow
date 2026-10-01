@@ -14,14 +14,19 @@ create table if not exists recruiting.inquiry_ledger (
                       check (status in ('pending','processing','retry','done','failed')),
   attempts            int not null default 0,
   lease_until         timestamptz,
+  lease_token         uuid,                       -- owner of the current attempt; stale writes are ignored
   next_attempt_at     timestamptz not null default now(),
+  payload             jsonb,                      -- the form fields, frozen when the submission was recorded
   model_result        jsonb,                      -- validated interpretation, stored once
   suggestions_written boolean not null default false,
   task_id             text,
   task_action         text,                       -- created | appended | reconciled
   last_step           text,
   last_error          text,                       -- step + HTTP status only, never message text
-  alerted_at          timestamptz,
+  alerted_at          timestamptz,                -- set only after the alert endpoint acknowledged
+  alert_attempts      int not null default 0,
+  alert_next_at       timestamptz,
+  alert_last_error    text,
   first_seen_at       timestamptz not null default now(),
   updated_at          timestamptz not null default now(),
   completed_at        timestamptz
@@ -46,3 +51,10 @@ create table if not exists recruiting.event_log (
   outcome        text not null,
   detail         text
 );
+
+-- Upgrading a ledger created by an earlier version of this file.
+alter table recruiting.inquiry_ledger add column if not exists payload jsonb;
+alter table recruiting.inquiry_ledger add column if not exists lease_token uuid;
+alter table recruiting.inquiry_ledger add column if not exists alert_attempts int not null default 0;
+alter table recruiting.inquiry_ledger add column if not exists alert_next_at timestamptz;
+alter table recruiting.inquiry_ledger add column if not exists alert_last_error text;
