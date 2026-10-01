@@ -105,9 +105,9 @@ if (!data.allPassed || data.passedChecks !== data.totalChecks || unit.passed !==
 if (Object.keys(FIX).length !== all.length) throw new Error("the page and the recorded run do not cover the same scenarios");
 
 const json = JSON.stringify(data);
-if (json.includes("—")) throw new Error("em dash in recorded data: fix the source before publishing");
+if (json.includes("\u2014")) throw new Error("em dash in recorded data: fix the source before publishing");
 const tpl = readFileSync(root + "page/template.html", "utf8");
-if (tpl.includes("—")) throw new Error("em dash in the page template");
+if (tpl.includes("\u2014")) throw new Error("em dash in the page template");
 const html = tpl.replace("/*__DATA__*/null", json.replace(/</g, "\\u003c"));
 mkdirSync(root + "site/files", { recursive: true });
 mkdirSync(root + "site/details", { recursive: true });
