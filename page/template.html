@@ -174,7 +174,7 @@ body[data-mode=details] .files{padding-bottom:0}
 
   <section class="intro" data-only="main">
     <h1>A physician inquiry, ready for your recruiting team in HubSpot.</h1>
-    <p class="lead">An n8n workflow reads each Join Expedient inquiry, keeps to what the physician actually wrote, and leaves a review task with a proposed reply. Someone on your team decides what to send.</p>
+    <p class="lead">Once a physician's inquiry is in HubSpot, an n8n workflow reads it, keeps to what the physician actually wrote, and leaves a review task with a proposed reply. Someone on your team decides what to send. The inquiries below are invented, with the fields of the Join Expedient form.</p>
     <p class="recorded" id="recorded"></p>
   </section>
   <section class="intro" data-only="details">
@@ -195,16 +195,17 @@ body[data-mode=details] .files{padding-bottom:0}
 
   <section class="proof" data-only="details">
     <h2>For whoever looks after HubSpot and n8n</h2>
-    <p class="intro2">The workflow is a reference, not something to switch on as is. It was tested on n8n <span data-n8n></span> in Docker against a HubSpot API simulator; no HubSpot account was used. Your properties, permissions, trigger and existing workflows have to be mapped before activation.</p>
+    <p class="intro2">The workflow is a reference, not something to switch on as is. It was tested on n8n <span data-n8n></span> in Docker against a HubSpot API simulator; no HubSpot account was used. Your properties, permissions, trigger and existing workflows have to be mapped before activation. It was built without access to your portal, so the first step is a run on your HubSpot sandbox.</p>
     <div class="facts">
       <div>
         <h3>One way in</h3>
+        <p>The public Join Expedient form is a WordPress form (Gravity Forms), and the site loads HubSpot's tracking script. The workflow assumes that each submission reaches HubSpot as a form conversion on the contact, with Credentials and Message mapped to contact properties, through the Gravity Forms add-on for HubSpot or HubSpot's collected forms. That has to be checked first; if submissions do not arrive that way, the entry point changes.</p>
         <p>Every two minutes, a poller asks HubSpot's contact search for contacts whose <code>recent_conversion_date</code> is newer than its checkpoint, minus a ten-minute overlap. A returning physician who submits again counts as a new inquiry, because the submission time changes. The workflow's own writes never touch that property, so it cannot trigger itself.</p>
         <p>It needs a private app token, not HubSpot's "Send a webhook" workflow action, and it registers no HubSpot Trigger node, so it does not compete with a trigger you may already run in n8n.</p>
       </div>
       <div>
         <h3>What the model sees</h3>
-        <p>Two fields, from an allowlist in the Configuration node: credentials and message. Name, email, phone, owner, notes, history and attachments stay in HubSpot. One provider was tested, OpenAI's <code data-model></code>, with no fallback to another. A message too short to read never reaches the model.</p>
+        <p>Two fields, from an allowlist in the Configuration node, credentials and message, plus one yes or no flag: whether your team already has a record for this physician. Name, email, phone, owner, notes, history and attachments stay in HubSpot. One provider was tested, OpenAI's <code data-model></code>, with no fallback to another. A message too short to read never reaches the model.</p>
         <p>The model proposes; plain code checks. A suggested value whose quote cannot be found word for word in what the physician wrote is dropped and flagged. Routing to review is a rule, not a model judgment.</p>
       </div>
       <div>
@@ -213,11 +214,12 @@ body[data-mode=details] .files{padding-bottom:0}
       </div>
       <div>
         <h3>When something fails</h3>
-        <p>A recovery ledger in the n8n Postgres records, per submission, which effects already happened. A retry finishes the missing step instead of replaying everything: the model is not asked twice, the contact is not rewritten, and a task that may already exist is looked up by its reference before anything is created. After three attempts it stops and sends an alert that carries the submission reference and the failing step, never the message.</p>
+        <p>A recovery ledger, in a Postgres database (the one n8n uses, if it runs on Postgres), records per submission, which effects already happened. A retry finishes the missing step instead of replaying everything: the model is not asked twice, the contact is not rewritten, and a task that may already exist is looked up by its reference before anything is created. After <code>MAX_ATTEMPTS</code> attempts (5 by default, 3 in these test runs) it stops and sends an alert that carries the submission reference and the failing step, never the message.</p>
       </div>
       <div>
         <h3>Before it runs on your portal</h3>
         <ul>
+          <li>First, check that join form submissions reach HubSpot as form conversions with Credentials and Message mapped. If they do not, the entry point changes.</li>
           <li>Map your property names in the Configuration node; the README lists the eight to create.</li>
           <li>Check which forms set <code>recent_conversion_date</code> on physician contacts, and set <code>JOIN_FORM_NAME</code> so only the join form counts.</li>
           <li>Choose the owner who receives the tasks and the channel for alerts.</li>
@@ -248,14 +250,15 @@ body[data-mode=details] .files{padding-bottom:0}
       <li><a href="files/poll-physician-inquiries.json" download>poll-physician-inquiries.json</a><span>The poller: the single entry point.</span></li>
       <li><a href="files/README.md" download>README.md</a><span>Setup, configuration, what goes to the model, limits.</span></li>
       <li><a href="files/hubspot-properties.json" download>hubspot-properties.json</a><span>The contact properties the workflow expects.</span></li>
-      <li><a href="files/recovery-ledger.sql" download>recovery-ledger.sql</a><span>The ledger tables, in the Postgres n8n already uses.</span></li>
+      <li><a href="files/recovery-ledger.sql" download>recovery-ledger.sql</a><span>The ledger tables, in a Postgres database (the one n8n uses, if it runs on Postgres).</span></li>
       <li><a href="files/model-instructions.txt" download>model-instructions.txt</a><span>The full instructions sent to the model.</span></li>
       <li><a href="files/recorded-test-runs.json" download>recorded-test-runs.json</a><span>Every check from the run shown on this page.</span></li>
+      <li><a href="https://github.com/fred1433/expedient-recruiting-workflow" rel="noopener">The full repository on GitHub</a><span>Bench, simulator, tests, build scripts and every recorded result.</span></li>
     </ul>
   </section>
 
   <footer class="foot">
-    <p class="more" data-only="main">Failures were tested too: n8n restarted mid-run, a task created but its answer lost, a task request refused after the contact update, the same submission picked up twice, a physician writing again, HubSpot down for every attempt. In each run the inquiry ended with one task and no lost work, or with an alert after three attempts. <a href="details/">See the six recovery runs, the technical notes and the files.</a></p>
+    <p class="more" data-only="main">Failures were tested too: n8n restarted mid-run, a task created but its answer lost, a task request refused after the contact update, the same submission picked up twice, a physician writing again, HubSpot down for every attempt. In each run the inquiry ended with one task and no lost work, or, when HubSpot never came back, with an alert once the allowed attempts ran out. <a href="details/">See the six recovery runs, the technical notes and the files.</a></p>
     <div class="sign">
       <span>Frederic de Lavenne de Choulot, The AI Pipe</span>
       <span>All physicians, emails and phone numbers on this page are invented. No patient or client data was used.</span>
@@ -278,7 +281,7 @@ const VIEWS = [
   { id: "missing", label: "Missing or conflicting information", cases: [
     ["sparse", "Dr. Bell, one word"],
     ["outOfState", "Dr. Park, licensed outside California"],
-    ["conflict", "Dr. Ortiz, contradicts the verified record"],
+    ["conflict", "Dr. Ortiz, lapsed, contradicts the record"],
     ["unclear", "Dr. Liu, unclear request"]] },
   { id: "recovery", label: "Recovery after a failure", cases: [
     ["restartMidway", "n8n restarts mid-run"],
@@ -304,8 +307,8 @@ const NOTES = {
 };
 const L = {
   says_certified_qme: "Says they are a certified QME", says_in_progress: "Says certification is in progress",
-  says_not_certified: "Says they are not certified", not_stated: "Not stated",
-  explore_qme_certification: "Exploring QME certification", established_qme_joining: "Established QME looking at the group",
+  says_not_certified: "Says they are not certified", says_lapsed: "Says their certification lapsed", not_stated: "Not stated",
+  explore_qme_certification: "Exploring QME certification", established_qme_joining: "Established QME looking at the group", returning_qme: "Former QME looking to return",
   other: "Other request", unclear: "Unclear",
   ready_for_review: ["Ready for review", ""], needs_clarification: ["Needs clarification", "warn"],
   conflict_with_verified_record: ["Conflicts with the verified record", "bad"], needs_information: ["Needs information", "warn"],
@@ -376,7 +379,7 @@ function slip(s, evidence) {
   const f = s.form;
   const short = f.message.length < 30;
   return `<div>
-    <p class="colHead">${ICON_FORM}What arrived through the join form</p>
+    <p class="colHead">${ICON_FORM}The inquiry, as it reaches HubSpot</p>
     <div class="slip">
       <div class="band"></div>
       <dl>
@@ -526,7 +529,7 @@ const WHAT = {
   taskFailsAfterUpdate: "The retry creates the missing task without rewriting the contact.",
   responseLost: "The retry finds the task already created instead of making a second.",
   restartMidway: "A restart mid-run: picked up after the lease expires, no duplicate.",
-  givesUp: "Persistent failure: three attempts, then an alert without the message.",
+  givesUp: "Persistent failure: the allowed attempts (3 in this run), then an alert without the message.",
 };
 const NAMES = Object.fromEntries(ALLVIEWS.flatMap((v) => v.cases));
 const HERE = new Set(VIEWS.flatMap((v) => v.cases.map((c) => c[0])));

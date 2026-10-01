@@ -8,7 +8,7 @@ const POLLER_ID = "ExpInqPoller0001";
 const PROCESS_ID = "ExpInqProcess001";
 const CRED_HUBSPOT = { id: "ExpHubspotTok001", name: "HubSpot private app token" };
 const CRED_MODEL = { id: "ExpModelKey00001", name: "Model API key (Authorization: Bearer)" };
-const CRED_PG = { id: "ExpPostgres00001", name: "Postgres (n8n host, recruiting schema)" };
+const CRED_PG = { id: "ExpPostgres00001", name: "Postgres (recruiting ledger)" };
 
 const SYSTEM_PROMPT = readFileSync(new URL("../workflows/model-instructions.txt", import.meta.url), "utf8").trim();
 
@@ -125,7 +125,7 @@ if (contact.message.replace(/\\s+/g, ' ').length < 20) {
     ambiguities: ['The message is empty or too short to interpret.'],
     flags: ['no_model_call:message_too_short'],
     review_status: 'needs_information',
-    proposed_reply: (contact.lastName ? 'Dear Dr. ' + contact.lastName : 'Hello') + ',\\n\\nThank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, where you are licensed, and whether you are already a QME or exploring certification?\\n\\nBest regards,',
+    proposed_reply: (contact.lastName ? 'Dear Dr. ' + contact.lastName : 'Hello') + ',\\n\\nThank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, where you are licensed, and whether you are already a QME or exploring certification?\\n\\nBest regards,\\n[Your name], Expedient recruiting',
     source: 'rules',
   };
   return [{ json: { contact, needsModel: false, reused: false, result } }];
@@ -133,6 +133,8 @@ if (contact.message.replace(/\\s+/g, ' ').length < 20) {
 
 const allowed = {};
 for (const f of cfg.modelFields) allowed[f] = contact[f];
+// One yes/no flag, no record data: the team already knows this contact (owner or verified status set).
+allowed.known_to_team = !!(contact.verifiedQmeStatus || contact.ownerId);
 // One provider (OpenAI Chat Completions, pinned model snapshot), no fallback.
 const modelRequest = {
   model: cfg.model,
@@ -191,13 +193,15 @@ const field = (name, allowed, fallback) => {
 const result = {
   specialty: field('specialty', null, null),
   license_states: field('license_states', null, null),
-  certification_statement: field('certification_statement', ['says_certified_qme', 'says_in_progress', 'says_not_certified', 'not_stated'], 'not_stated'),
-  intent: field('intent', ['explore_qme_certification', 'established_qme_joining', 'other', 'unclear'], 'unclear'),
+  certification_statement: field('certification_statement', ['says_certified_qme', 'says_lapsed', 'says_in_progress', 'says_not_certified', 'not_stated'], 'not_stated'),
+  intent: field('intent', ['explore_qme_certification', 'established_qme_joining', 'returning_qme', 'other', 'unclear'], 'unclear'),
   call_availability: field('call_availability', null, null),
   questions: Array.isArray(m.questions) ? m.questions.slice(0, 5).map(String) : [],
   ambiguities: Array.isArray(m.ambiguities) ? m.ambiguities.slice(0, 5).map(String) : [],
   // The model never sees the name; the greeting is filled in here from the contact record.
-  proposed_reply: String(m.proposed_reply || '').slice(0, 2000).replace(/^\\s*Hello,/, c.lastName ? 'Dear Dr. ' + c.lastName + ',' : 'Hello,'),
+  // The closing is fixed here too: whoever sends it signs it.
+  proposed_reply: String(m.proposed_reply || '').slice(0, 2000).replace(/^\\s*Hello,/, c.lastName ? 'Dear Dr. ' + c.lastName + ',' : 'Hello,')
+    .replace(/\\s*(best regards|kind regards|sincerely|regards),?[\\s\\S]*$/i, '').trim() + '\\n\\nBest regards,\\n[Your name], Expedient recruiting',
   flags,
   source: 'model',
 };
@@ -206,17 +210,20 @@ if (result.license_states.value && !Array.isArray(result.license_states.value)) 
 // Review routing is ordinary code, not model judgment.
 const v = c.verifiedQmeStatus, s = result.certification_statement.value;
 const contradicts =
-  (v === 'certified_qme' && (s === 'says_not_certified' || s === 'says_in_progress')) ||
+  (v === 'certified_qme' && (s === 'says_not_certified' || s === 'says_in_progress' || s === 'says_lapsed')) ||
   (v === 'not_certified' && s === 'says_certified_qme') ||
   (v === 'in_progress' && s === 'says_not_certified');
 const states = result.license_states.value || [];
+// A physician the team does not know yet and who names no state: the coordinator asks.
+const noStateForNewContact = states.length === 0 && !(c.verifiedQmeStatus || c.ownerId);
 const outsideCalifornia = states.length > 0 && !states.some(x => /^(CA|california)$/i.test(String(x).trim()));
 if (contradicts) {
   result.review_status = 'conflict_with_verified_record';
   flags.push('conflict:verified_qme_status=' + v + ',message_says=' + s);
-} else if (outsideCalifornia || result.intent.value === 'unclear' || result.ambiguities.length) {
+} else if (outsideCalifornia || noStateForNewContact || result.intent.value === 'unclear' || result.ambiguities.length) {
   result.review_status = 'needs_clarification';
   if (outsideCalifornia) flags.push('clarify:licensed_states_without_california');
+  if (noStateForNewContact) flags.push('clarify:license_state_not_stated');
 } else {
   result.review_status = 'ready_for_review';
 }
@@ -309,8 +316,8 @@ const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').re
 const ns = v => (v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length)) ? '<i>not stated</i>' : esc(Array.isArray(v) ? v.join(', ') : v);
 const label = {
   says_certified_qme: 'says they are a certified QME', says_in_progress: 'says certification is in progress',
-  says_not_certified: 'says they are not certified', not_stated: 'not stated',
-  explore_qme_certification: 'exploring QME certification', established_qme_joining: 'established QME looking at the group',
+  says_not_certified: 'says they are not certified', says_lapsed: 'says their certification lapsed', not_stated: 'not stated',
+  explore_qme_certification: 'exploring QME certification', established_qme_joining: 'established QME looking at the group', returning_qme: 'former QME looking to return',
   other: 'other request', unclear: 'unclear',
   ready_for_review: 'Ready for review', needs_clarification: 'Needs clarification',
   conflict_with_verified_record: 'Conflicts with the verified record', needs_information: 'Needs information',

@@ -1,5 +1,5 @@
 # Local test bench for the physician inquiry workflow.
-# n8n is pinned to an exact version; Postgres holds both the n8n database and the
+# n8n is pinned to an exact version; on this bench one Postgres holds both the n8n database and the
 # recovery ledger (schema "recruiting"), so one backup covers both.
 #
 #   docker compose up -d            # n8n + postgres + simulator

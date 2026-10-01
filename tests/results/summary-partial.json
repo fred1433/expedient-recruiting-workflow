@@ -1,10 +1,10 @@
 {
   "n8n": "2.42.2",
-  "ranAt": "2026-10-01T18:59:07.905Z",
+  "ranAt": "2026-10-01T19:16:52.627Z",
   "scenarios": [
     {
-      "id": "ordinary",
-      "started": "2026-10-01T18:59:01.570Z",
+      "id": "established",
+      "started": "2026-10-01T19:16:46.317Z",
       "passed": true,
       "checks": [
         {
@@ -12,44 +12,12 @@
           "ok": true
         },
         {
-          "label": "certification read as not yet certified",
+          "label": "intent read as an established QME",
           "ok": true,
-          "detail": "says_not_certified"
+          "detail": "established_qme_joining"
         },
         {
-          "label": "complete inquiry routed as ready for review",
-          "ok": true,
-          "detail": "ready_for_review"
-        },
-        {
-          "label": "task associated to the contact",
-          "ok": true
-        },
-        {
-          "label": "task assigned to the recruiting owner",
-          "ok": true
-        },
-        {
-          "label": "task has a due date",
-          "ok": true,
-          "detail": "2026-10-02T17:00:00.000Z"
-        },
-        {
-          "label": "proposed reply is in the task body",
-          "ok": true
-        },
-        {
-          "label": "one model call, two fields sent",
-          "ok": true,
-          "detail": [
-            [
-              "credentials",
-              "message"
-            ]
-          ]
-        },
-        {
-          "label": "no email sent (no email or communication endpoint called)",
+          "label": "proposed reply signed [Your name], Expedient recruiting",
           "ok": true
         },
         {

@@ -3,9 +3,12 @@
 Turns a physician's inquiry from the join form into a reviewable HubSpot work item: suggestions in their own
 contact properties, one review task with a proposed reply, and nothing sent to the physician.
 
+Repository: https://github.com/fred1433/expedient-recruiting-workflow
+
 **Status.** Reference workflow tested on n8n 2.42.2 (Docker, Postgres 17) against a HubSpot API simulator.
 No HubSpot account was used. Your properties, permissions, trigger and existing workflows must be mapped
-before activation. Every inquiry in the tests is invented.
+before activation. Built without access to your portal: the first step is a run on your HubSpot sandbox.
+Every inquiry in the tests is invented.
 
 ## Files
 
@@ -15,7 +18,7 @@ before activation. Every inquiry in the tests is invented.
 | `workflows/process-physician-inquiry.json` | Processes one submission; called by the poller |
 | `workflows/model-instructions.txt` | The full instructions sent to the model (embedded in the workflow at build time) |
 | `hubspot/properties.json` | The contact properties the workflow writes, and the two it reads |
-| `db/init.sql` | The recovery ledger (schema `recruiting`), created in the Postgres n8n already uses |
+| `db/init.sql` | The recovery ledger (schema `recruiting`), in a Postgres database (the one n8n uses, if it runs on Postgres) |
 | `scripts/build-workflows.mjs` | Generates the two JSON files from readable code |
 | `scripts/setup-hubspot-properties.mjs` | Creates the property group and properties in a portal (never overwrites one) |
 | `docker-compose.yml`, `ops/up.sh` | The local bench: n8n pinned to 2.42.2, Postgres, the simulator |
@@ -23,6 +26,12 @@ before activation. Every inquiry in the tests is invented.
 | `tests/` | The scenarios and their recorded results |
 
 ## How it starts (one entry mechanism)
+
+**Prerequisite, step 0.** The public Join Expedient form is a WordPress form (Gravity Forms); the site also loads
+HubSpot's tracking script. This workflow assumes each submission reaches HubSpot as a form conversion on the contact
+(it sets `recent_conversion_date`), with the form's Credentials and Message fields mapped to contact properties: for
+example through the Gravity Forms add-on for HubSpot, or HubSpot's collected forms. Check that first. If submissions
+do not reach HubSpot that way, the entry point changes (for instance a Gravity Forms webhook into n8n).
 
 The poller asks the CRM search API for contacts whose `recent_conversion_date` is later than its checkpoint
 minus `POLL_OVERLAP_MINUTES` (10). Each result becomes a submission key `contactId:conversionTimeMs`, recorded once
@@ -40,7 +49,9 @@ in the ledger (`on conflict do nothing`). Consequences:
 
 ## What goes to the model
 
-Only `credentials` and `message` (allowlist `modelFields` in the Configuration node). Name, email, phone, owner,
+Only `credentials` and `message` (allowlist `modelFields` in the Configuration node), plus one boolean,
+`known_to_team` (the contact already has an owner or a staff-verified status), so the reply does not ask for
+background the team already holds. Name, email, phone, owner,
 notes, history and attachments are never sent. The name is put into the reply's greeting afterwards, in code.
 A message shorter than 20 characters is not sent at all: plain code marks it "needs information".
 
@@ -55,7 +66,7 @@ physician wrote; if not, the value is dropped and flagged `unsupported:<field>`.
 | Situation | `ai_inquiry_review_status` |
 | --- | --- |
 | Message contradicts the staff-verified QME status | `conflict_with_verified_record` (task priority High) |
-| Licensed states without California, unclear intent, or open questions | `needs_clarification` |
+| Licensed states without California, no state named by a physician the team does not know yet, unclear intent, or open questions | `needs_clarification` |
 | Message too short to read | `needs_information` |
 | Otherwise | `ready_for_review` |
 
@@ -80,7 +91,7 @@ whether the suggestions were written, the task id. A retry completes the missing
   created by an attempt that never got its answer is found, not duplicated (the create call itself has no blind
   in-node retry for that reason);
 - an attempt interrupted by a crash or restart is taken again once its lease (`LEASE_SECONDS`) expires;
-- after `MAX_ATTEMPTS` the submission is marked failed and an alert is posted to `ALERT_WEBHOOK_URL`. The alert
+- after `MAX_ATTEMPTS` (5 by default; 3 on the test bench, see `.env.example`) the submission is marked failed and an alert is posted to `ALERT_WEBHOOK_URL`. The alert
   carries the submission key, the contact id, the failing step and HTTP status, never the message or the name.
 - `recruiting.event_log` keeps one line per step; failed executions also stay visible in n8n.
 
@@ -94,12 +105,28 @@ required (or replace those reads with fixed values).
 
 Before activation on your portal:
 
+0. Check that join form submissions reach HubSpot as form conversions with Credentials and Message mapped
+   (see "How it starts"). If not, the entry point changes.
 1. Create the properties (`node scripts/setup-hubspot-properties.mjs`) or map existing ones in the Configuration node.
 2. Map the credentials field and the staff-verified status to your own property names.
 3. Create a private app with contact read/write and task permissions; check scopes in your portal.
 4. Choose the task owner and the alert channel.
 5. Set `JOIN_FORM_NAME` to what your portal records for the join form.
 6. Run it against a sandbox or test portal first.
+
+## Importing into your n8n
+
+The poller calls the processing workflow by its ID, `ExpInqProcess001`. Two ways to keep that link:
+
+- import with the CLI, which keeps the IDs in the files:
+  `n8n import:workflow --input=process-physician-inquiry.json` then the same for `poll-physician-inquiries.json`;
+- or import through the editor, then open the poller's "Process each submission" node and select the processing
+  workflow again from the list.
+
+Then relink the three credentials in the nodes that use them (or create them under these names before importing):
+"HubSpot private app token" (type HubSpot App Token), "Model API key (Authorization: Bearer)" (Header Auth,
+name `Authorization`, value `Bearer <key>`) and "Postgres (recruiting ledger)" (the database holding the
+`recruiting` schema from `db/init.sql`). Publish the processing workflow, then the poller.
 
 ## Running the bench
 
@@ -111,6 +138,11 @@ node tests/run-scenarios.mjs    # every scenario; results in tests/results/
 
 The simulator forwards model calls unchanged to the provider and records them, so every model call in the
 recorded runs is a real call. HubSpot is always the simulator.
+
+## Proposed replies
+
+The model never sees the name. The workflow adds "Dear Dr. <last name>," and the closing
+"Best regards, [Your name], Expedient recruiting" for whoever edits and sends the reply.
 
 ## Recorded scenarios
 

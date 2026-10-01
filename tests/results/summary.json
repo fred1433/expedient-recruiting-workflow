@@ -1,10 +1,10 @@
 {
   "n8n": "2.42.2",
-  "ranAt": "2026-10-01T19:02:27.542Z",
+  "ranAt": "2026-10-01T19:24:00.461Z",
   "scenarios": [
     {
       "id": "ordinary",
-      "started": "2026-10-01T18:59:15.731Z",
+      "started": "2026-10-01T19:20:47.744Z",
       "passed": true,
       "checks": [
         {
@@ -39,17 +39,22 @@
           "ok": true
         },
         {
-          "label": "one model call, two fields sent",
+          "label": "one model call: credentials, message and the known-to-team flag only",
           "ok": true,
           "detail": [
             [
               "credentials",
-              "message"
+              "message",
+              "known_to_team"
             ]
           ]
         },
         {
           "label": "no email sent (no email or communication endpoint called)",
+          "ok": true
+        },
+        {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
           "ok": true
         },
         {
@@ -60,7 +65,7 @@
     },
     {
       "id": "established",
-      "started": "2026-10-01T18:59:22.001Z",
+      "started": "2026-10-01T19:20:55.857Z",
       "passed": true,
       "checks": [
         {
@@ -73,6 +78,10 @@
           "detail": "established_qme_joining"
         },
         {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
           "label": "proposed reply does not ask for phone, email or name",
           "ok": true
         }
@@ -80,7 +89,7 @@
     },
     {
       "id": "sparse",
-      "started": "2026-10-01T18:59:27.693Z",
+      "started": "2026-10-01T19:21:02.145Z",
       "passed": true,
       "checks": [
         {
@@ -100,6 +109,10 @@
           "ok": true
         },
         {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
           "label": "proposed reply does not ask for phone, email or name",
           "ok": true
         }
@@ -107,7 +120,7 @@
     },
     {
       "id": "outOfState",
-      "started": "2026-10-01T18:59:32.224Z",
+      "started": "2026-10-01T19:21:06.687Z",
       "passed": true,
       "checks": [
         {
@@ -125,6 +138,10 @@
           "detail": "clarify:licensed_states_without_california"
         },
         {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
           "label": "proposed reply does not ask for phone, email or name",
           "ok": true
         }
@@ -132,7 +149,7 @@
     },
     {
       "id": "conflict",
-      "started": "2026-10-01T18:59:39.663Z",
+      "started": "2026-10-01T19:21:13.499Z",
       "passed": true,
       "checks": [
         {
@@ -157,6 +174,20 @@
           "ok": true
         },
         {
+          "label": "lapsed certification read as lapsed",
+          "ok": true,
+          "detail": "says_lapsed"
+        },
+        {
+          "label": "not read as an established QME",
+          "ok": true,
+          "detail": "returning_qme"
+        },
+        {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
           "label": "proposed reply does not ask for phone, email or name",
           "ok": true
         }
@@ -164,7 +195,7 @@
     },
     {
       "id": "unclear",
-      "started": "2026-10-01T18:59:47.086Z",
+      "started": "2026-10-01T19:21:19.755Z",
       "passed": true,
       "checks": [
         {
@@ -178,6 +209,10 @@
           "detail": "not_stated"
         },
         {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
           "label": "proposed reply does not ask for phone, email or name",
           "ok": true
         }
@@ -185,7 +220,7 @@
     },
     {
       "id": "doubleDelivery",
-      "started": "2026-10-01T18:59:53.345Z",
+      "started": "2026-10-01T19:21:25.455Z",
       "passed": true,
       "checks": [
         {
@@ -211,6 +246,10 @@
           "ok": true
         },
         {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
           "label": "proposed reply does not ask for phone, email or name",
           "ok": true
         }
@@ -218,7 +257,7 @@
     },
     {
       "id": "samePhysicianAgain",
-      "started": "2026-10-01T19:00:03.488Z",
+      "started": "2026-10-01T19:21:35.629Z",
       "passed": true,
       "checks": [
         {
@@ -238,6 +277,10 @@
           "ok": true
         },
         {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
           "label": "proposed reply does not ask for phone, email or name",
           "ok": true
         }
@@ -245,7 +288,7 @@
     },
     {
       "id": "taskFailsAfterUpdate",
-      "started": "2026-10-01T19:00:16.052Z",
+      "started": "2026-10-01T19:21:48.481Z",
       "passed": true,
       "checks": [
         {
@@ -269,6 +312,10 @@
           "ok": true
         },
         {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
           "label": "proposed reply does not ask for phone, email or name",
           "ok": true
         }
@@ -276,7 +323,7 @@
     },
     {
       "id": "responseLost",
-      "started": "2026-10-01T19:00:30.204Z",
+      "started": "2026-10-01T19:22:03.508Z",
       "passed": true,
       "checks": [
         {
@@ -293,6 +340,10 @@
           "detail": "reconciled"
         },
         {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
           "label": "proposed reply does not ask for phone, email or name",
           "ok": true
         }
@@ -300,7 +351,7 @@
     },
     {
       "id": "restartMidway",
-      "started": "2026-10-01T19:00:43.469Z",
+      "started": "2026-10-01T19:22:16.531Z",
       "passed": true,
       "checks": [
         {
@@ -321,6 +372,10 @@
           "ok": true
         },
         {
+          "label": "proposed reply signed [Your name], Expedient recruiting",
+          "ok": true
+        },
+        {
           "label": "proposed reply does not ask for phone, email or name",
           "ok": true
         }
@@ -328,14 +383,14 @@
     },
     {
       "id": "givesUp",
-      "started": "2026-10-01T19:02:02.144Z",
+      "started": "2026-10-01T19:23:35.343Z",
       "passed": true,
       "checks": [
         {
           "label": "stopped after 3 attempts",
           "ok": true,
           "detail": {
-            "submission_key": "1000:1790881322157",
+            "submission_key": "1000:1790882615436",
             "status": "failed",
             "attempts": 3,
             "suggestions_written": false,

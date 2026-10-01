@@ -1,4 +1,5 @@
--- Recovery ledger for the physician inquiry workflow.
+-- Recovery ledger for the physician inquiry workflow, in a Postgres database
+-- (the one n8n uses, if it runs on Postgres; any other Postgres works too).
 -- One row per form submission (contact id + submission timestamp). The row records
 -- which business effects already happened, so a retry completes the missing steps
 -- instead of replaying everything.

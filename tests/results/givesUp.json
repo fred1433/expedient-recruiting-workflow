@@ -1,13 +1,13 @@
 {
   "id": "givesUp",
-  "started": "2026-10-01T19:02:02.144Z",
+  "started": "2026-10-01T19:23:35.343Z",
   "n8n": "2.42.2",
   "checks": [
     {
       "label": "stopped after 3 attempts",
       "ok": true,
       "detail": {
-        "submission_key": "1000:1790881322157",
+        "submission_key": "1000:1790882615436",
         "status": "failed",
         "attempts": 3,
         "suggestions_written": false,
@@ -41,28 +41,28 @@
       "properties": {
         "hs_object_id": "1000",
         "email": "p.raman@example.test",
-        "first_conversion_date": "2026-10-01T19:02:02.157Z",
-        "createdate": "2026-10-01T19:02:02.157Z",
+        "first_conversion_date": "2026-10-01T19:23:35.436Z",
+        "createdate": "2026-10-01T19:23:35.436Z",
         "firstname": "Priya",
         "lastname": "Raman",
         "physician_credentials": "MD",
         "phone": "(555) 010-2231",
         "message": "I'm a board-certified psychiatrist, licensed in California, and I'd like to start doing QME evaluations alongside my practice. I'm not a QME yet and haven't taken the course. I'm free for a call on Thursday afternoons. What does the preparation involve?",
-        "recent_conversion_date": "2026-10-01T19:02:02.157Z",
+        "recent_conversion_date": "2026-10-01T19:23:35.436Z",
         "recent_conversion_event_name": "Join Expedient"
       },
-      "createdAt": "2026-10-01T19:02:02.157Z",
-      "updatedAt": "2026-10-01T19:02:02.157Z"
+      "createdAt": "2026-10-01T19:23:35.436Z",
+      "updatedAt": "2026-10-01T19:23:35.436Z"
     }
   ],
   "tasks": [],
   "assoc": {},
   "alerts": [
     {
-      "at": "2026-10-01T19:02:23.722Z",
+      "at": "2026-10-01T19:23:56.895Z",
       "body": {
-        "text": "Physician inquiry workflow: submission 1000:1790881322157 stopped after 3 attempts at step \"Read contact: 503\". Contact record 1000. Nothing was sent to the physician. Check the execution and the ledger.",
-        "submission_key": "1000:1790881322157",
+        "text": "Physician inquiry workflow: submission 1000:1790882615436 stopped after 3 attempts at step \"Read contact: 503\". Contact record 1000. Nothing was sent to the physician. Check the execution and the ledger.",
+        "submission_key": "1000:1790882615436",
         "contact_id": "1000",
         "last_error": "Read contact: 503",
         "attempts": 3
@@ -72,81 +72,81 @@
   "modelCalls": [],
   "http": [
     {
-      "at": "2026-10-01T19:02:02.196Z",
+      "at": "2026-10-01T19:23:35.483Z",
       "method": "POST",
       "path": "/crm/v3/objects/contacts/search",
       "status": 200
     },
     {
-      "at": "2026-10-01T19:02:02.264Z",
+      "at": "2026-10-01T19:23:35.555Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "fault": "error",
       "status": 503
     },
     {
-      "at": "2026-10-01T19:02:03.792Z",
+      "at": "2026-10-01T19:23:37.082Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "fault": "error",
       "status": 503
     },
     {
-      "at": "2026-10-01T19:02:05.312Z",
+      "at": "2026-10-01T19:23:38.597Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "fault": "error",
       "status": 503
     },
     {
-      "at": "2026-10-01T19:02:11.341Z",
+      "at": "2026-10-01T19:23:44.671Z",
       "method": "POST",
       "path": "/crm/v3/objects/contacts/search",
       "status": 200
     },
     {
-      "at": "2026-10-01T19:02:11.406Z",
+      "at": "2026-10-01T19:23:44.744Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "fault": "error",
       "status": 503
     },
     {
-      "at": "2026-10-01T19:02:12.934Z",
+      "at": "2026-10-01T19:23:46.257Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "fault": "error",
       "status": 503
     },
     {
-      "at": "2026-10-01T19:02:14.449Z",
+      "at": "2026-10-01T19:23:47.769Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "fault": "error",
       "status": 503
     },
     {
-      "at": "2026-10-01T19:02:20.580Z",
+      "at": "2026-10-01T19:23:53.772Z",
       "method": "POST",
       "path": "/crm/v3/objects/contacts/search",
       "status": 200
     },
     {
-      "at": "2026-10-01T19:02:20.661Z",
+      "at": "2026-10-01T19:23:53.840Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "fault": "error",
       "status": 503
     },
     {
-      "at": "2026-10-01T19:02:22.179Z",
+      "at": "2026-10-01T19:23:55.352Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "fault": "error",
       "status": 503
     },
     {
-      "at": "2026-10-01T19:02:23.693Z",
+      "at": "2026-10-01T19:23:56.865Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "fault": "error",
@@ -155,7 +155,7 @@
   ],
   "ledger": [
     {
-      "submission_key": "1000:1790881322157",
+      "submission_key": "1000:1790882615436",
       "status": "failed",
       "attempts": 3,
       "suggestions_written": false,
@@ -168,50 +168,50 @@
   ],
   "events": [
     {
-      "at": "19:02:02.211",
-      "submission_key": "1000:1790881322157",
+      "at": "19:23:35.497",
+      "submission_key": "1000:1790882615436",
       "step": "poll",
       "outcome": "recorded",
       "detail": null
     },
     {
-      "at": "19:02:02.216",
-      "submission_key": "1000:1790881322157",
+      "at": "19:23:35.503",
+      "submission_key": "1000:1790882615436",
       "step": "claim",
       "outcome": "attempt 1",
       "detail": null
     },
     {
-      "at": "19:02:05.336",
-      "submission_key": "1000:1790881322157",
+      "at": "19:23:38.620",
+      "submission_key": "1000:1790882615436",
       "step": "Read contact",
       "outcome": "failed",
       "detail": "503 (attempt 1, now retry)"
     },
     {
-      "at": "19:02:11.367",
-      "submission_key": "1000:1790881322157",
+      "at": "19:23:44.691",
+      "submission_key": "1000:1790882615436",
       "step": "claim",
       "outcome": "attempt 2",
       "detail": "resuming after: Read contact: 503"
     },
     {
-      "at": "19:02:14.464",
-      "submission_key": "1000:1790881322157",
+      "at": "19:23:47.783",
+      "submission_key": "1000:1790882615436",
       "step": "Read contact",
       "outcome": "failed",
       "detail": "503 (attempt 2, now retry)"
     },
     {
-      "at": "19:02:20.593",
-      "submission_key": "1000:1790881322157",
+      "at": "19:23:53.793",
+      "submission_key": "1000:1790882615436",
       "step": "claim",
       "outcome": "attempt 3",
       "detail": "resuming after: Read contact: 503"
     },
     {
-      "at": "19:02:23.709",
-      "submission_key": "1000:1790881322157",
+      "at": "19:23:56.877",
+      "submission_key": "1000:1790882615436",
       "step": "Read contact",
       "outcome": "failed",
       "detail": "503 (attempt 3, now failed)"
@@ -219,46 +219,46 @@
   ],
   "executions": [
     {
-      "id": 407,
+      "id": 552,
       "workflow": "Physician inquiry: poll HubSpot form submissions",
       "status": "success",
-      "started": "19:02:02",
-      "stopped": "19:02:05"
+      "started": "19:23:35",
+      "stopped": "19:23:38"
     },
     {
-      "id": 408,
+      "id": 553,
       "workflow": "Physician inquiry: process one submission",
       "status": "error",
-      "started": "19:02:02",
-      "stopped": "19:02:05"
+      "started": "19:23:35",
+      "stopped": "19:23:38"
     },
     {
-      "id": 409,
+      "id": 554,
       "workflow": "Physician inquiry: poll HubSpot form submissions",
       "status": "success",
-      "started": "19:02:11",
-      "stopped": "19:02:14"
+      "started": "19:23:44",
+      "stopped": "19:23:47"
     },
     {
-      "id": 410,
+      "id": 555,
       "workflow": "Physician inquiry: process one submission",
       "status": "error",
-      "started": "19:02:11",
-      "stopped": "19:02:14"
+      "started": "19:23:44",
+      "stopped": "19:23:47"
     },
     {
-      "id": 411,
+      "id": 556,
       "workflow": "Physician inquiry: poll HubSpot form submissions",
       "status": "success",
-      "started": "19:02:20",
-      "stopped": "19:02:23"
+      "started": "19:23:53",
+      "stopped": "19:23:56"
     },
     {
-      "id": 412,
+      "id": 557,
       "workflow": "Physician inquiry: process one submission",
       "status": "error",
-      "started": "19:02:20",
-      "stopped": "19:02:23"
+      "started": "19:23:53",
+      "stopped": "19:23:56"
     }
   ]
 }

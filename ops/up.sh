@@ -28,7 +28,7 @@ creds = [
    "data": {"appToken": os.environ.get("HUBSPOT_TOKEN", "simulator-token")}},
   {"id": "ExpModelKey00001", "name": "Model API key (Authorization: Bearer)", "type": "httpHeaderAuth",
    "data": {"name": "Authorization", "value": "Bearer " + os.environ.get("MODEL_API_KEY", "simulator-key")}},
-  {"id": "ExpPostgres00001", "name": "Postgres (n8n host, recruiting schema)", "type": "postgres",
+  {"id": "ExpPostgres00001", "name": "Postgres (recruiting ledger)", "type": "postgres",
    "data": {"host": "postgres", "port": 5432, "database": "n8n", "user": "n8n",
             "password": os.environ["POSTGRES_PASSWORD"], "ssl": "disable"}},
 ]
