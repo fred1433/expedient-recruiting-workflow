@@ -35,8 +35,8 @@ button{font:inherit;color:inherit}
 .top img{width:20px;height:20px}
 
 /* intro */
-.intro{padding:40px 0 22px;display:grid;grid-template-columns:minmax(0,820px);gap:18px}
-h1{font:500 clamp(34px,4.8vw,56px)/1.05 var(--serif);letter-spacing:-.015em;margin:0;font-variation-settings:"opsz" 60}
+.intro{padding:30px 0 16px;gap:12px;display:grid;grid-template-columns:minmax(0,820px);gap:18px}
+h1{font:500 clamp(32px,4.2vw,50px)/1.06 var(--serif);letter-spacing:-.015em;margin:0;font-variation-settings:"opsz" 60}
 .lead{font-size:19px;line-height:1.55;color:var(--ink-2);margin:0;max-width:66ch}
 .recorded{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--ink-3);margin:6px 0 0}
 .recorded b{color:var(--ink);font-weight:600}
@@ -60,12 +60,12 @@ h1{font:500 clamp(34px,4.8vw,56px)/1.05 var(--serif);letter-spacing:-.015em;marg
 /* the form slip */
 .slip{background:var(--sheet);border-radius:6px;box-shadow:0 1px 0 var(--desk-edge),0 0 0 1px var(--desk-edge);padding:0 0 22px;position:relative}
 .slip .band{height:8px;background:repeating-linear-gradient(90deg,var(--slate) 0 22px,transparent 22px 26px);opacity:.9;border-radius:6px 6px 0 0}
-.slip dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:18px 22px 0;font-size:14px}
+.slip dl{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;margin:14px 22px 0;font-size:14px}
 .slip dt{color:var(--ink-3)}
 .slip dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
-.msg{font:400 23px/1.5 var(--serif);margin:18px 22px 0;color:var(--ink);font-variation-settings:"opsz" 24}
+.msg{font:400 23px/1.5 var(--serif);margin:6px 22px 0;color:var(--ink);font-variation-settings:"opsz" 24}
 .msg.short{font-size:30px}
-.msgLabel{margin:20px 22px 0;font-size:14px;color:var(--ink-3)}
+.msgLabel{margin:12px 22px 0;font-size:14px;color:var(--ink-3)}
 mark{background:linear-gradient(transparent 12%,var(--amber-soft) 12%,var(--amber-soft) 92%,transparent 92%);color:inherit;padding:0 1px;border-radius:2px;transition:background .15s}
 mark.on{background:linear-gradient(transparent 6%,var(--amber) 6%,var(--amber) 96%,transparent 96%);box-shadow:0 2px 0 #C9A92B}
 .slipFoot{margin:18px 22px 0;font-size:13px;color:var(--ink-3)}
@@ -152,7 +152,15 @@ h2{font:500 clamp(26px,3.2vw,36px)/1.15 var(--serif);margin:0 0 10px;letter-spac
 .files a{font-weight:600;text-decoration:none}
 .files a:hover{text-decoration:underline}
 .files span{display:block;font-size:14px;color:var(--ink-2)}
-.sign{margin:48px 0 0;padding-top:20px;border-top:1px solid var(--rule);font-size:14.5px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between}
+body[data-mode=main] [data-only=details],body[data-mode=details] [data-only=main]{display:none!important}
+body[data-mode=details] .views{display:none}
+.back{margin:0;font-size:15px}
+.foot{padding:40px 0 56px}
+.more{font-size:17px;line-height:1.6;color:var(--ink-2);max-width:72ch;margin:0}
+.more a{font-weight:600}
+body[data-mode=details] .proof{padding-top:56px}
+body[data-mode=details] .files{padding-bottom:0}
+.sign{margin:32px 0 0;padding-top:20px;border-top:1px solid var(--rule);font-size:14.5px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media (max-width:640px){.fields .row{grid-template-columns:1fr;gap:2px;padding:9px 14px}.kept td{padding-right:6px}.timeline li{grid-template-columns:52px 12px 1fr;padding-right:10px}.end dt,.end dd{font-size:14px}}
 </style>
@@ -164,10 +172,16 @@ h2{font:500 clamp(26px,3.2vw,36px)/1.15 var(--serif);margin:0 0 10px;letter-spac
     <a class="by" href="https://theaipipe.com" rel="noopener"><img src="favicon.svg" alt="">The AI Pipe</a>
   </div>
 
-  <section class="intro">
+  <section class="intro" data-only="main">
     <h1>A physician inquiry, ready for your recruiting team in HubSpot.</h1>
-    <p class="lead">A reference n8n workflow, run on invented inquiries shaped like the public Join Expedient form. It reads the message, keeps to what the physician actually wrote, and leaves a review task with a proposed reply on the contact. Someone on your team decides what to say and sends it.</p>
+    <p class="lead">An n8n workflow reads each Join Expedient inquiry, keeps to what the physician actually wrote, and leaves a review task with a proposed reply. Someone on your team decides what to send.</p>
     <p class="recorded" id="recorded"></p>
+  </section>
+  <section class="intro" data-only="details">
+    <p class="back"><a href="../">Back to the inquiry</a></p>
+    <h1>When something fails, and the technical detail.</h1>
+    <p class="lead">Six recorded runs where HubSpot or n8n misbehaves on purpose, then how the workflow starts, what it sends to the model, what it writes, and the files.</p>
+    <p class="recorded" id="recorded2"></p>
   </section>
 
   <section class="desk" aria-label="Recorded test runs">
@@ -179,7 +193,7 @@ h2{font:500 clamp(26px,3.2vw,36px)/1.15 var(--serif);margin:0 0 10px;letter-spac
     <ul class="checks" id="checks"></ul>
   </section>
 
-  <section class="proof">
+  <section class="proof" data-only="details">
     <h2>For whoever looks after HubSpot and n8n</h2>
     <p class="intro2">The workflow is a reference, not something to switch on as is. It was tested on n8n <span data-n8n></span> in Docker against a HubSpot API simulator; no HubSpot account was used. Your properties, permissions, trigger and existing workflows have to be mapped before activation.</p>
     <div class="facts">
@@ -227,7 +241,7 @@ h2{font:500 clamp(26px,3.2vw,36px)/1.15 var(--serif);margin:0 0 10px;letter-spac
     </div>
   </section>
 
-  <section class="files">
+  <section class="files" data-only="details">
     <h2>Files</h2>
     <ul>
       <li><a href="files/process-physician-inquiry.json" download>process-physician-inquiry.json</a><span>The n8n workflow that handles one submission.</span></li>
@@ -238,15 +252,21 @@ h2{font:500 clamp(26px,3.2vw,36px)/1.15 var(--serif);margin:0 0 10px;letter-spac
       <li><a href="files/model-instructions.txt" download>model-instructions.txt</a><span>The full instructions sent to the model.</span></li>
       <li><a href="files/recorded-test-runs.json" download>recorded-test-runs.json</a><span>Every check from the run shown on this page.</span></li>
     </ul>
+  </section>
+
+  <footer class="foot">
+    <p class="more" data-only="main">Failures were tested too: n8n restarted mid-run, a task created but its answer lost, a task request refused after the contact update, the same submission picked up twice, a physician writing again, HubSpot down for every attempt. In each run the inquiry ended with one task and no lost work, or with an alert after three attempts. <a href="details/">See the six recovery runs, the technical notes and the files.</a></p>
     <div class="sign">
-      <span>Frederic de Choulot, The AI Pipe</span>
+      <span>Frederic de Lavenne de Choulot, The AI Pipe</span>
       <span>All physicians, emails and phone numbers on this page are invented. No patient or client data was used.</span>
     </div>
-  </section>
+  </footer>
 </div>
 
 <script>
 const DATA = /*__DATA__*/null;
+const MODE = /*__MODE__*/"main";
+document.body.dataset.mode = MODE;
 const S = DATA.scenarios;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -269,7 +289,7 @@ const VIEWS = [
     ["givesUp", "HubSpot keeps failing"]] },
 ];
 const NOTES = {
-  ordinary: "The kind of message a physician leaves on the join form: some facts, a question, a time to talk, and nothing about certification.",
+  ordinary: "The kind of message a physician leaves on the join form: who they are, where they stand with QME work, a question and a time to talk.",
   established: "A physician who says they already work as a QME. No call window given, so none is suggested.",
   sparse: "One word. No model call: plain code marks it as needing information and drafts a reply asking for the basics.",
   outOfState: "Licensed in two other states. Not rejected: the task asks the coordinator to clarify.",
@@ -292,7 +312,9 @@ const L = {
   certified_qme: "Certified QME", opportunity: "Opportunity",
 };
 
-let view = "ordinary", cur = "ordinary";
+const ALLVIEWS = VIEWS.slice();
+VIEWS.splice(0, VIEWS.length, ...ALLVIEWS.filter((v) => MODE === "details" ? v.id === "recovery" : v.id !== "recovery"));
+let view = VIEWS[0].id, cur = VIEWS[0].cases[0][0];
 try { const h = decodeURIComponent(location.hash.slice(1)); if (S[h]) { cur = h; view = VIEWS.find((v) => v.cases.some((c) => c[0] === h)).id; } } catch (e) {}
 
 const ICON_OK = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#1D5C58" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -489,7 +511,7 @@ $("cases").addEventListener("click", (e) => {
 
 const ran = new Date(DATA.ranAt);
 const day = ran.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", month: "long", day: "numeric", year: "numeric" });
-$("recorded").innerHTML = `<span><b>Recorded test runs</b>, ${esc(day)}</span><span>n8n ${esc(DATA.n8n)} in Docker</span><span>HubSpot API simulator, no HubSpot account</span><span>${DATA.passedChecks} of ${DATA.totalChecks} checks held</span>`;
+$("recorded2").innerHTML = $("recorded").innerHTML = `<span><b>Recorded test runs</b>, ${esc(day)}</span><span>n8n ${esc(DATA.n8n)} in Docker</span><span>HubSpot API simulator, no HubSpot account</span><span>${DATA.passedChecks} of ${DATA.totalChecks} checks held</span>`;
 document.querySelectorAll("[data-n8n]").forEach((n) => (n.textContent = DATA.n8n));
 document.querySelectorAll("[data-model]").forEach((n) => (n.textContent = DATA.model));
 const WHAT = {
@@ -506,10 +528,11 @@ const WHAT = {
   restartMidway: "A restart mid-run: picked up after the lease expires, no duplicate.",
   givesUp: "Persistent failure: three attempts, then an alert without the message.",
 };
-const NAMES = Object.fromEntries(VIEWS.flatMap((v) => v.cases));
-$("runs").innerHTML = VIEWS.flatMap((v) => v.cases).map(([id]) => {
+const NAMES = Object.fromEntries(ALLVIEWS.flatMap((v) => v.cases));
+const HERE = new Set(VIEWS.flatMap((v) => v.cases.map((c) => c[0])));
+$("runs").innerHTML = ALLVIEWS.flatMap((v) => v.cases).map(([id]) => {
   const s = S[id], ok = s.checks.filter((c) => c.ok).length;
-  return `<tr><td><a href="#${id}" data-go="${id}">${esc(NAMES[id])}</a></td><td class="what">${esc(WHAT[id])}</td><td>${ok} of ${s.checks.length}</td></tr>`;
+  return `<tr><td>${HERE.has(id) ? `<a href="#${id}" data-go="${id}">` : `<a href="../#${id}">`}${esc(NAMES[id])}</a></td><td class="what">${esc(WHAT[id])}</td><td>${ok} of ${s.checks.length}</td></tr>`;
 }).join("");
 $("runs").addEventListener("click", (e) => {
   const a = e.target.closest("a[data-go]"); if (!a) return;

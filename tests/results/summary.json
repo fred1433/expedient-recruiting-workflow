@@ -1,15 +1,25 @@
 {
   "n8n": "2.42.2",
-  "ranAt": "2026-10-01T18:48:51.466Z",
+  "ranAt": "2026-10-01T19:02:27.542Z",
   "scenarios": [
     {
       "id": "ordinary",
-      "started": "2026-10-01T18:45:50.502Z",
+      "started": "2026-10-01T18:59:15.731Z",
       "passed": true,
       "checks": [
         {
           "label": "exactly one review task",
           "ok": true
+        },
+        {
+          "label": "certification read as not yet certified",
+          "ok": true,
+          "detail": "says_not_certified"
+        },
+        {
+          "label": "complete inquiry routed as ready for review",
+          "ok": true,
+          "detail": "ready_for_review"
         },
         {
           "label": "task associated to the contact",
@@ -41,12 +51,16 @@
         {
           "label": "no email sent (no email or communication endpoint called)",
           "ok": true
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "established",
-      "started": "2026-10-01T18:45:57.771Z",
+      "started": "2026-10-01T18:59:22.001Z",
       "passed": true,
       "checks": [
         {
@@ -57,12 +71,16 @@
           "label": "intent read as an established QME",
           "ok": true,
           "detail": "established_qme_joining"
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "sparse",
-      "started": "2026-10-01T18:46:03.477Z",
+      "started": "2026-10-01T18:59:27.693Z",
       "passed": true,
       "checks": [
         {
@@ -80,12 +98,16 @@
         {
           "label": "still one review task, with a reply asking for the basics",
           "ok": true
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "outOfState",
-      "started": "2026-10-01T18:46:08.024Z",
+      "started": "2026-10-01T18:59:32.224Z",
       "passed": true,
       "checks": [
         {
@@ -101,12 +123,16 @@
           "label": "flagged: licensed states without California",
           "ok": true,
           "detail": "clarify:licensed_states_without_california"
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "conflict",
-      "started": "2026-10-01T18:46:14.838Z",
+      "started": "2026-10-01T18:59:39.663Z",
       "passed": true,
       "checks": [
         {
@@ -129,12 +155,16 @@
         {
           "label": "task raised to high priority",
           "ok": true
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "unclear",
-      "started": "2026-10-01T18:46:21.053Z",
+      "started": "2026-10-01T18:59:47.086Z",
       "passed": true,
       "checks": [
         {
@@ -146,12 +176,16 @@
           "label": "no certification status invented",
           "ok": true,
           "detail": "not_stated"
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "doubleDelivery",
-      "started": "2026-10-01T18:46:26.746Z",
+      "started": "2026-10-01T18:59:53.345Z",
       "passed": true,
       "checks": [
         {
@@ -175,12 +209,16 @@
         {
           "label": "one model call",
           "ok": true
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "samePhysicianAgain",
-      "started": "2026-10-01T18:46:36.861Z",
+      "started": "2026-10-01T19:00:03.488Z",
       "passed": true,
       "checks": [
         {
@@ -198,12 +236,16 @@
         {
           "label": "second inquiry added to that task",
           "ok": true
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "taskFailsAfterUpdate",
-      "started": "2026-10-01T18:46:48.463Z",
+      "started": "2026-10-01T19:00:16.052Z",
       "passed": true,
       "checks": [
         {
@@ -225,12 +267,16 @@
         {
           "label": "finished on attempt 2",
           "ok": true
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "responseLost",
-      "started": "2026-10-01T18:46:54.722Z",
+      "started": "2026-10-01T19:00:30.204Z",
       "passed": true,
       "checks": [
         {
@@ -245,12 +291,16 @@
           "label": "found by its reference and reconciled",
           "ok": true,
           "detail": "reconciled"
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "restartMidway",
-      "started": "2026-10-01T18:47:07.929Z",
+      "started": "2026-10-01T19:00:43.469Z",
       "passed": true,
       "checks": [
         {
@@ -269,19 +319,23 @@
         {
           "label": "model not called again",
           "ok": true
+        },
+        {
+          "label": "proposed reply does not ask for phone, email or name",
+          "ok": true
         }
       ]
     },
     {
       "id": "givesUp",
-      "started": "2026-10-01T18:48:26.474Z",
+      "started": "2026-10-01T19:02:02.144Z",
       "passed": true,
       "checks": [
         {
           "label": "stopped after 3 attempts",
           "ok": true,
           "detail": {
-            "submission_key": "1000:1790880506520",
+            "submission_key": "1000:1790881322157",
             "status": "failed",
             "attempts": 3,
             "suggestions_written": false,

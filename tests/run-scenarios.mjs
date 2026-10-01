@@ -50,6 +50,8 @@ const scenarios = {
     const t = s.tasks[0]?.properties || {};
     return { s, checks: [
       check("exactly one review task", s.tasks.length === 1),
+      check("certification read as not yet certified", s.contacts[0].properties.ai_inquiry_certification_statement === "says_not_certified", s.contacts[0].properties.ai_inquiry_certification_statement),
+      check("complete inquiry routed as ready for review", s.contacts[0].properties.ai_inquiry_review_status === "ready_for_review", s.contacts[0].properties.ai_inquiry_review_status),
       check("task associated to the contact", (s.assoc[s.contacts[0].id] || []).length === 1),
       check("task assigned to the recruiting owner", t.hubspot_owner_id === "900001"),
       check("task has a due date", !!t.hs_timestamp, t.hs_timestamp),
@@ -226,6 +228,8 @@ for (const [id, fn] of Object.entries(scenarios)) {
   process.stdout.write(id + " ... ");
   try {
     const { s, checks } = await fn();
+    const replies = s.tasks.map((t) => t.properties.hs_task_body || "").join(" ").split("Proposed reply").slice(1).join(" ");
+    if (replies) checks.push(check("proposed reply does not ask for phone, email or name", !/(phone number|(your|best|a) (phone|contact) (number|details)|e-?mail address|your (full )?name)/i.test(replies)));
     const passed = checks.every((c) => c.ok);
     writeFileSync(OUT + id + ".json", JSON.stringify({ id, started, n8n: version, checks, ...s }, null, 2));
     summary.push({ id, started, passed, checks });

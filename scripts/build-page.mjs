@@ -102,7 +102,12 @@ if (json.includes("—")) throw new Error("em dash in recorded data: fix the sou
 const html = readFileSync(root + "page/template.html", "utf8").replace("/*__DATA__*/null", json.replace(/</g, "\\u003c"));
 if (html.includes("—")) throw new Error("em dash in the page template");
 mkdirSync(root + "site/files", { recursive: true });
+mkdirSync(root + "site/details", { recursive: true });
 writeFileSync(root + "site/index.html", html);
+const details = html.replace('/*__MODE__*/"main"', '"details"')
+  .replace(/(src|href)="(favicon\.(svg|png)|files\/)/g, '$1="../$2')
+  .replace("<title>Physician inquiry workflow</title>", "<title>Recovery runs and details</title>");
+writeFileSync(root + "site/details/index.html", details);
 for (const [from, to] of [
   ["workflows/process-physician-inquiry.json", "process-physician-inquiry.json"],
   ["workflows/poll-physician-inquiries.json", "poll-physician-inquiries.json"],

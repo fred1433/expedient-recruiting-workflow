@@ -1,11 +1,21 @@
 {
   "id": "ordinary",
-  "started": "2026-10-01T18:45:50.502Z",
+  "started": "2026-10-01T18:59:15.731Z",
   "n8n": "2.42.2",
   "checks": [
     {
       "label": "exactly one review task",
       "ok": true
+    },
+    {
+      "label": "certification read as not yet certified",
+      "ok": true,
+      "detail": "says_not_certified"
+    },
+    {
+      "label": "complete inquiry routed as ready for review",
+      "ok": true,
+      "detail": "ready_for_review"
     },
     {
       "label": "task associated to the contact",
@@ -37,6 +47,10 @@
     {
       "label": "no email sent (no email or communication endpoint called)",
       "ok": true
+    },
+    {
+      "label": "proposed reply does not ask for phone, email or name",
+      "ok": true
     }
   ],
   "contacts": [
@@ -45,26 +59,26 @@
       "properties": {
         "hs_object_id": "1000",
         "email": "p.raman@example.test",
-        "first_conversion_date": "2026-10-01T18:45:50.584Z",
-        "createdate": "2026-10-01T18:45:50.584Z",
+        "first_conversion_date": "2026-10-01T18:59:15.784Z",
+        "createdate": "2026-10-01T18:59:15.784Z",
         "firstname": "Priya",
         "lastname": "Raman",
         "physician_credentials": "MD",
         "phone": "(555) 010-2231",
-        "message": "I'm a psychiatrist licensed in California and interested in becoming a QME. I could speak on Thursday afternoons. What does the preparation involve?",
-        "recent_conversion_date": "2026-10-01T18:45:50.584Z",
+        "message": "I'm a board-certified psychiatrist, licensed in California, and I'd like to start doing QME evaluations alongside my practice. I'm not a QME yet and haven't taken the course. I'm free for a call on Thursday afternoons. What does the preparation involve?",
+        "recent_conversion_date": "2026-10-01T18:59:15.784Z",
         "recent_conversion_event_name": "Join Expedient",
         "ai_inquiry_specialty": "psychiatrist",
         "ai_inquiry_license_states": "CA",
-        "ai_inquiry_certification_statement": "not_stated",
+        "ai_inquiry_certification_statement": "says_not_certified",
         "ai_inquiry_intent": "explore_qme_certification",
         "ai_inquiry_call_availability": "Thursday afternoons",
-        "ai_inquiry_review_status": "needs_clarification",
+        "ai_inquiry_review_status": "ready_for_review",
         "ai_inquiry_flags": "none",
-        "ai_inquiry_ref": "1000:1790880350584"
+        "ai_inquiry_ref": "1000:1790881155784"
       },
-      "createdAt": "2026-10-01T18:45:50.584Z",
-      "updatedAt": "2026-10-01T18:45:53.922Z"
+      "createdAt": "2026-10-01T18:59:15.784Z",
+      "updatedAt": "2026-10-01T18:59:18.427Z"
     }
   ],
   "tasks": [
@@ -72,17 +86,17 @@
       "id": "1001",
       "properties": {
         "hs_object_id": "1001",
-        "hs_createdate": "2026-10-01T18:45:54.018Z",
+        "hs_createdate": "2026-10-01T18:59:18.469Z",
         "hs_task_subject": "Physician inquiry: Priya Raman, MD (review and reply)",
-        "hs_task_body": "<p><b>Needs clarification</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>I'm a psychiatrist licensed in California and interested in becoming a QME. I could speak on Thursday afternoons. What does the preparation involve?</p><p><b>Suggested reading, from their own words</b><br>Specialty: psychiatrist <span style=\"color:#666\">(\"I'm a psychiatrist\")</span><br>Licensed in: CA <span style=\"color:#666\">(\"licensed in California\")</span><br>Certification: not stated<br>Looking for: exploring QME certification <span style=\"color:#666\">(\"interested in becoming a QME\")</span><br>Available for a first call: Thursday afternoons <span style=\"color:#666\">(\"I could speak on Thursday afternoons\")</span> (a call window, not evaluation capacity)</p><p><b>To clarify</b><br>Whether they are already a certified QME or just exploring the process</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Raman,<br><br>Thank you for reaching out and for your interest in becoming a QME. We’d be happy to share an overview of the preparation process and answer any questions you have.<br><br>You mentioned that Thursday afternoons work for you. Please share the best phone number to reach you, and our team will propose a time for a first conversation.<br><br>Best regards,</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880350584</p>",
+        "hs_task_body": "<p><b>Ready for review</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>I'm a board-certified psychiatrist, licensed in California, and I'd like to start doing QME evaluations alongside my practice. I'm not a QME yet and haven't taken the course. I'm free for a call on Thursday afternoons. What does the preparation involve?</p><p><b>Suggested reading, from their own words</b><br>Specialty: psychiatrist <span style=\"color:#666\">(\"I'm a board-certified psychiatrist\")</span><br>Licensed in: CA <span style=\"color:#666\">(\"licensed in California\")</span><br>Certification: says they are not certified <span style=\"color:#666\">(\"I'm not a QME yet and haven't taken the course\")</span><br>Looking for: exploring QME certification <span style=\"color:#666\">(\"I'd like to start doing QME evaluations alongside my practice\")</span><br>Available for a first call: Thursday afternoons <span style=\"color:#666\">(\"I'm free for a call on Thursday afternoons\")</span> (a call window, not evaluation capacity)</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Raman,<br><br>Thank you for reaching out. It’s great to hear that you’re interested in starting QME evaluations alongside your practice. We’d be happy to talk through what the preparation typically involves and answer your questions.<br><br>You mentioned that Thursday afternoons work for you, so the team can propose a time for a first conversation.<br><br>Best regards,</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790881155784</p>",
         "hs_task_status": "NOT_STARTED",
         "hs_task_priority": "MEDIUM",
         "hs_task_type": "TODO",
         "hs_timestamp": "2026-10-02T17:00:00.000Z",
         "hubspot_owner_id": "900001"
       },
-      "createdAt": "2026-10-01T18:45:54.018Z",
-      "updatedAt": "2026-10-01T18:45:54.018Z"
+      "createdAt": "2026-10-01T18:59:18.469Z",
+      "updatedAt": "2026-10-01T18:59:18.469Z"
     }
   ],
   "assoc": {
@@ -93,28 +107,28 @@
   "alerts": [],
   "modelCalls": [
     {
-      "at": "2026-10-01T18:45:51.285Z",
+      "at": "2026-10-01T18:59:15.912Z",
       "mode": "proxy",
       "model": "gpt-5.4-mini-2026-03-17",
       "fieldsSent": [
         "credentials",
         "message"
       ],
-      "bytesSent": 181,
+      "bytesSent": 286,
       "status": 200,
-      "ms": 2444,
-      "content": "{\n  \"specialty\": {\n    \"value\": \"psychiatrist\",\n    \"evidence\": \"I'm a psychiatrist\"\n  },\n  \"license_states\": {\n    \"value\": [\n      \"CA\"\n    ],\n    \"evidence\": \"licensed in California\"\n  },\n  \"certification_statement\": {\n    \"value\": \"not_stated\",\n    \"evidence\": null\n  },\n  \"intent\": {\n    \"value\": \"explore_qme_certification\",\n    \"evidence\": \"interested in becoming a QME\"\n  },\n  \"call_availability\": {\n    \"value\": \"Thursday afternoons\",\n    \"evidence\": \"I could speak on Thursday afternoons\"\n  },\n  \"questions\": [\n    \"What does the preparation involve?\"\n  ],\n  \"ambiguities\": [\n    \"Whether they are already a certified QME or just exploring the process\"\n  ],\n  \"proposed_reply\": \"Hello,\\n\\nThank you for reaching out and for your interest in becoming a QME. We’d be happy to share an overview of the preparation process and answer any questions you have.\\n\\nYou mentioned that Thursday afternoons work for you. Please share the best phone number to reach you, and our team will propose a time for a first conversation.\\n\\nBest regards,\"\n}",
+      "ms": 2484,
+      "content": "{\n  \"specialty\": {\n    \"value\": \"psychiatrist\",\n    \"evidence\": \"I'm a board-certified psychiatrist\"\n  },\n  \"license_states\": {\n    \"value\": [\n      \"CA\"\n    ],\n    \"evidence\": \"licensed in California\"\n  },\n  \"certification_statement\": {\n    \"value\": \"says_not_certified\",\n    \"evidence\": \"I'm not a QME yet and haven't taken the course\"\n  },\n  \"intent\": {\n    \"value\": \"explore_qme_certification\",\n    \"evidence\": \"I'd like to start doing QME evaluations alongside my practice\"\n  },\n  \"call_availability\": {\n    \"value\": \"Thursday afternoons\",\n    \"evidence\": \"I'm free for a call on Thursday afternoons\"\n  },\n  \"questions\": [\n    \"What does the preparation involve?\"\n  ],\n  \"ambiguities\": [],\n  \"proposed_reply\": \"Hello,\\n\\nThank you for reaching out. It’s great to hear that you’re interested in starting QME evaluations alongside your practice. We’d be happy to talk through what the preparation typically involves and answer your questions.\\n\\nYou mentioned that Thursday afternoons work for you, so the team can propose a time for a first conversation.\\n\\nBest regards,\"\n}",
       "servedModel": "gpt-5.4-mini-2026-03-17",
       "usage": {
-        "prompt_tokens": 694,
-        "completion_tokens": 343,
-        "total_tokens": 1037,
+        "prompt_tokens": 837,
+        "completion_tokens": 351,
+        "total_tokens": 1188,
         "prompt_tokens_details": {
           "cached_tokens": 0,
           "audio_tokens": 0
         },
         "completion_tokens_details": {
-          "reasoning_tokens": 62,
+          "reasoning_tokens": 70,
           "audio_tokens": 0,
           "accepted_prediction_tokens": 0,
           "rejected_prediction_tokens": 0
@@ -124,37 +138,37 @@
   ],
   "http": [
     {
-      "at": "2026-10-01T18:45:51.098Z",
+      "at": "2026-10-01T18:59:15.839Z",
       "method": "POST",
       "path": "/crm/v3/objects/contacts/search",
       "status": 200
     },
     {
-      "at": "2026-10-01T18:45:51.251Z",
+      "at": "2026-10-01T18:59:15.899Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "status": 200
     },
     {
-      "at": "2026-10-01T18:45:51.285Z",
+      "at": "2026-10-01T18:59:15.912Z",
       "method": "POST",
       "path": "/v1/chat/completions",
       "status": 200
     },
     {
-      "at": "2026-10-01T18:45:53.922Z",
+      "at": "2026-10-01T18:59:18.427Z",
       "method": "PATCH",
       "path": "/crm/v3/objects/contacts/1000",
       "status": 200
     },
     {
-      "at": "2026-10-01T18:45:53.980Z",
+      "at": "2026-10-01T18:59:18.444Z",
       "method": "GET",
       "path": "/crm/v4/objects/contacts/1000/associations/tasks",
       "status": 200
     },
     {
-      "at": "2026-10-01T18:45:54.018Z",
+      "at": "2026-10-01T18:59:18.469Z",
       "method": "POST",
       "path": "/crm/v3/objects/tasks",
       "status": 201
@@ -162,7 +176,7 @@
   ],
   "ledger": [
     {
-      "submission_key": "1000:1790880350584",
+      "submission_key": "1000:1790881155784",
       "status": "done",
       "attempts": 1,
       "suggestions_written": true,
@@ -175,36 +189,36 @@
   ],
   "events": [
     {
-      "at": "18:45:51.169",
-      "submission_key": "1000:1790880350584",
+      "at": "18:59:15.855",
+      "submission_key": "1000:1790881155784",
       "step": "poll",
       "outcome": "recorded",
       "detail": null
     },
     {
-      "at": "18:45:51.179",
-      "submission_key": "1000:1790880350584",
+      "at": "18:59:15.861",
+      "submission_key": "1000:1790881155784",
       "step": "claim",
       "outcome": "attempt 1",
       "detail": null
     },
     {
-      "at": "18:45:53.792",
-      "submission_key": "1000:1790880350584",
+      "at": "18:59:18.412",
+      "submission_key": "1000:1790881155784",
       "step": "interpret",
       "outcome": "saved",
-      "detail": "model:needs_clarification"
+      "detail": "model:ready_for_review"
     },
     {
-      "at": "18:45:53.947",
-      "submission_key": "1000:1790880350584",
+      "at": "18:59:18.433",
+      "submission_key": "1000:1790881155784",
       "step": "suggestions",
       "outcome": "written",
       "detail": null
     },
     {
-      "at": "18:45:54.035",
-      "submission_key": "1000:1790880350584",
+      "at": "18:59:18.479",
+      "submission_key": "1000:1790881155784",
       "step": "task",
       "outcome": "done",
       "detail": "created 1001"
@@ -212,18 +226,18 @@
   ],
   "executions": [
     {
-      "id": 259,
+      "id": 375,
       "workflow": "Physician inquiry: poll HubSpot form submissions",
       "status": "success",
-      "started": "18:45:50",
-      "stopped": "18:45:54"
+      "started": "18:59:15",
+      "stopped": "18:59:18"
     },
     {
-      "id": 260,
+      "id": 376,
       "workflow": "Physician inquiry: process one submission",
       "status": "success",
-      "started": "18:45:51",
-      "stopped": "18:45:54"
+      "started": "18:59:15",
+      "stopped": "18:59:18"
     }
   ]
 }

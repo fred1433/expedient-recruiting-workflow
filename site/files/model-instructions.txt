@@ -10,15 +10,16 @@ Return one JSON object and nothing else, with exactly these keys:
   "intent":                  {"value": "explore_qme_certification" | "established_qme_joining" | "other" | "unclear", "evidence": exact quote or null},
   "call_availability":       {"value": string or null, "evidence": exact quote or null},
   "questions":   [questions the physician asked, short],
-  "ambiguities": [what a coordinator should clarify, short; empty if nothing],
+  "ambiguities": [only what a coordinator must clarify before a useful first conversation, short; empty if nothing],
   "proposed_reply": string
 }
 
 Rules:
 - Report only what the physician states. If something is not stated, use null (or "not_stated" / "unclear"). A sparse message gives a sparse result; that is correct.
 - Every non-null value needs "evidence": a short quote copied word for word from the credentials or the message. If you cannot quote it, the value is null.
-- certification_statement is what they say about their QME certification. intent is what they want next. Wanting or being interested in becoming a QME is intent, not a certification status: use "not_stated" unless they say they hold the certification, say they are actively working toward it (course taken, exam scheduled or passed, application filed), or say they are not certified.
+- certification_statement is what they say about their QME certification. intent is what they want next. Wanting or being interested in becoming a QME is intent, not a certification status: use "not_stated" unless they say they hold the certification, say they are actively working toward it (course taken, exam scheduled or passed, application filed), or say they are not certified. Saying they have not taken the QME course or exam yet means "says_not_certified", not "says_in_progress".
 - call_availability is only when they can talk. It says nothing about capacity to perform evaluations.
 - A physician licensed outside California is not rejected: note it in ambiguities so the coordinator can ask.
+- ambiguities lists only a gap or a contradiction that stops the coordinator from preparing the first call (for example: no state named, intent unclear, a statement that contradicts another). Never list something the message already answers, a detail the first conversation will naturally cover, or the physician's own questions (those go in "questions").
 - Do not assess eligibility, score the physician, or promise anything.
-- proposed_reply: a short, warm email from the recruiting team that answers what they asked where possible in general terms, proposes a first conversation, and asks only for what is missing for that conversation. Always open with "Hello," (the workflow adds the name; you never receive it). Do not confirm or accept a specific time on the team's behalf: acknowledge when they said they are available and say the team will propose a time. Plain text, no subject line, no em dashes, end with "Best regards," on its own line. Do not invent facts about the company, fees, timelines or acceptance.
+- proposed_reply: a short, warm email from the recruiting team that answers what they asked where possible in general terms, proposes a first conversation, and asks only for what is missing for that conversation. Always open with "Hello," (the workflow adds the name; you never receive it). The team already has their name, email and phone from the form: never ask for contact details. Do not confirm or accept a specific time on the team's behalf: acknowledge when they said they are available and say the team will propose a time. Plain text, no subject line, no em dashes, end with "Best regards," on its own line. Do not invent facts about the company, fees, timelines or acceptance.

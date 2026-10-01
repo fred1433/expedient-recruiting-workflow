@@ -1,6 +1,6 @@
 {
   "id": "sparse",
-  "started": "2026-10-01T18:46:03.477Z",
+  "started": "2026-10-01T18:59:27.693Z",
   "n8n": "2.42.2",
   "checks": [
     {
@@ -18,6 +18,10 @@
     {
       "label": "still one review task, with a reply asking for the basics",
       "ok": true
+    },
+    {
+      "label": "proposed reply does not ask for phone, email or name",
+      "ok": true
     }
   ],
   "contacts": [
@@ -26,14 +30,14 @@
       "properties": {
         "hs_object_id": "1000",
         "email": "mbell.do@example.test",
-        "first_conversion_date": "2026-10-01T18:46:03.523Z",
-        "createdate": "2026-10-01T18:46:03.523Z",
+        "first_conversion_date": "2026-10-01T18:59:27.723Z",
+        "createdate": "2026-10-01T18:59:27.723Z",
         "firstname": "Marcus",
         "lastname": "Bell",
         "physician_credentials": "DO",
         "phone": "(555) 010-7781",
         "message": "Interested.",
-        "recent_conversion_date": "2026-10-01T18:46:03.523Z",
+        "recent_conversion_date": "2026-10-01T18:59:27.723Z",
         "recent_conversion_event_name": "Join Expedient",
         "ai_inquiry_specialty": "not stated",
         "ai_inquiry_license_states": "not stated",
@@ -42,10 +46,10 @@
         "ai_inquiry_call_availability": "not stated",
         "ai_inquiry_review_status": "needs_information",
         "ai_inquiry_flags": "no_model_call:message_too_short",
-        "ai_inquiry_ref": "1000:1790880363523"
+        "ai_inquiry_ref": "1000:1790881167723"
       },
-      "createdAt": "2026-10-01T18:46:03.523Z",
-      "updatedAt": "2026-10-01T18:46:03.660Z"
+      "createdAt": "2026-10-01T18:59:27.723Z",
+      "updatedAt": "2026-10-01T18:59:27.859Z"
     }
   ],
   "tasks": [
@@ -53,17 +57,17 @@
       "id": "1001",
       "properties": {
         "hs_object_id": "1001",
-        "hs_createdate": "2026-10-01T18:46:03.699Z",
+        "hs_createdate": "2026-10-01T18:59:27.891Z",
         "hs_task_subject": "Physician inquiry: Marcus Bell, DO (review and reply)",
-        "hs_task_body": "<p><b>Needs information</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>Interested.</p><p><b>Suggested reading, from their own words</b><br>Specialty: <i>not stated</i><br>Licensed in: <i>not stated</i><br>Certification: not stated<br>Looking for: unclear<br>Available for a first call: <i>not stated</i> (a call window, not evaluation capacity)</p><p><b>To clarify</b><br>The message is empty or too short to interpret.</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Bell,<br><br>Thank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, where you are licensed, and whether you are already a QME or exploring certification?<br><br>Best regards,</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790880363523</p>",
+        "hs_task_body": "<p><b>Needs information</b>. Nothing has been sent to the physician.</p><p><b>What they wrote</b><br>Interested.</p><p><b>Suggested reading, from their own words</b><br>Specialty: <i>not stated</i><br>Licensed in: <i>not stated</i><br>Certification: not stated<br>Looking for: unclear<br>Available for a first call: <i>not stated</i> (a call window, not evaluation capacity)</p><p><b>To clarify</b><br>The message is empty or too short to interpret.</p><p><b>Proposed reply</b> (edit, then send it yourself)<br>Dear Dr. Bell,<br><br>Thank you for reaching out about joining Expedient. To make our first conversation useful, could you tell us a little about your specialty, where you are licensed, and whether you are already a QME or exploring certification?<br><br>Best regards,</p><p style=\"color:#999;font-size:11px\">expedient-inquiry-review ref:1000:1790881167723</p>",
         "hs_task_status": "NOT_STARTED",
         "hs_task_priority": "MEDIUM",
         "hs_task_type": "TODO",
         "hs_timestamp": "2026-10-02T17:00:00.000Z",
         "hubspot_owner_id": "900001"
       },
-      "createdAt": "2026-10-01T18:46:03.699Z",
-      "updatedAt": "2026-10-01T18:46:03.699Z"
+      "createdAt": "2026-10-01T18:59:27.891Z",
+      "updatedAt": "2026-10-01T18:59:27.891Z"
     }
   ],
   "assoc": {
@@ -75,31 +79,31 @@
   "modelCalls": [],
   "http": [
     {
-      "at": "2026-10-01T18:46:03.573Z",
+      "at": "2026-10-01T18:59:27.758Z",
       "method": "POST",
       "path": "/crm/v3/objects/contacts/search",
       "status": 200
     },
     {
-      "at": "2026-10-01T18:46:03.633Z",
+      "at": "2026-10-01T18:59:27.809Z",
       "method": "GET",
       "path": "/crm/v3/objects/contacts/1000",
       "status": 200
     },
     {
-      "at": "2026-10-01T18:46:03.660Z",
+      "at": "2026-10-01T18:59:27.859Z",
       "method": "PATCH",
       "path": "/crm/v3/objects/contacts/1000",
       "status": 200
     },
     {
-      "at": "2026-10-01T18:46:03.680Z",
+      "at": "2026-10-01T18:59:27.873Z",
       "method": "GET",
       "path": "/crm/v4/objects/contacts/1000/associations/tasks",
       "status": 200
     },
     {
-      "at": "2026-10-01T18:46:03.699Z",
+      "at": "2026-10-01T18:59:27.891Z",
       "method": "POST",
       "path": "/crm/v3/objects/tasks",
       "status": 201
@@ -107,7 +111,7 @@
   ],
   "ledger": [
     {
-      "submission_key": "1000:1790880363523",
+      "submission_key": "1000:1790881167723",
       "status": "done",
       "attempts": 1,
       "suggestions_written": true,
@@ -120,36 +124,36 @@
   ],
   "events": [
     {
-      "at": "18:46:03.589",
-      "submission_key": "1000:1790880363523",
+      "at": "18:59:27.773",
+      "submission_key": "1000:1790881167723",
       "step": "poll",
       "outcome": "recorded",
       "detail": null
     },
     {
-      "at": "18:46:03.594",
-      "submission_key": "1000:1790880363523",
+      "at": "18:59:27.777",
+      "submission_key": "1000:1790881167723",
       "step": "claim",
       "outcome": "attempt 1",
       "detail": null
     },
     {
-      "at": "18:46:03.648",
-      "submission_key": "1000:1790880363523",
+      "at": "18:59:27.824",
+      "submission_key": "1000:1790881167723",
       "step": "interpret",
       "outcome": "saved",
       "detail": "rules:needs_information"
     },
     {
-      "at": "18:46:03.672",
-      "submission_key": "1000:1790880363523",
+      "at": "18:59:27.865",
+      "submission_key": "1000:1790881167723",
       "step": "suggestions",
       "outcome": "written",
       "detail": null
     },
     {
-      "at": "18:46:03.709",
-      "submission_key": "1000:1790880363523",
+      "at": "18:59:27.900",
+      "submission_key": "1000:1790881167723",
       "step": "task",
       "outcome": "done",
       "detail": "created 1001"
@@ -157,18 +161,18 @@
   ],
   "executions": [
     {
-      "id": 263,
+      "id": 379,
       "workflow": "Physician inquiry: poll HubSpot form submissions",
       "status": "success",
-      "started": "18:46:03",
-      "stopped": "18:46:03"
+      "started": "18:59:27",
+      "stopped": "18:59:27"
     },
     {
-      "id": 264,
+      "id": 380,
       "workflow": "Physician inquiry: process one submission",
       "status": "success",
-      "started": "18:46:03",
-      "stopped": "18:46:03"
+      "started": "18:59:27",
+      "stopped": "18:59:27"
     }
   ]
 }

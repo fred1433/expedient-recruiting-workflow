@@ -2,7 +2,7 @@
 // email, phone, free-text message. Every person, address and number below is invented.
 export const people = {
   raman: { email: "p.raman@example.test", firstname: "Priya", lastname: "Raman", physician_credentials: "MD", phone: "(555) 010-2231",
-    message: "I'm a psychiatrist licensed in California and interested in becoming a QME. I could speak on Thursday afternoons. What does the preparation involve?" },
+    message: "I'm a board-certified psychiatrist, licensed in California, and I'd like to start doing QME evaluations alongside my practice. I'm not a QME yet and haven't taken the course. I'm free for a call on Thursday afternoons. What does the preparation involve?" },
   raman2: { email: "p.raman@example.test", firstname: "Priya", lastname: "Raman", physician_credentials: "MD", phone: "(555) 010-2231",
     message: "Quick update to my note from this morning: I finished the QME course and I'm registered for the exam in January. Mornings work better for a call now." },
   okoye: { email: "dokoye@example.test", firstname: "Daniel", lastname: "Okoye", physician_credentials: "MD, orthopedic surgery", phone: "(555) 010-4410",

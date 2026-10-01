@@ -1,15 +1,25 @@
 {
   "n8n": "2.42.2",
-  "ranAt": "2026-10-01T18:19:31.849Z",
+  "ranAt": "2026-10-01T18:59:07.905Z",
   "scenarios": [
     {
       "id": "ordinary",
-      "started": "2026-10-01T18:18:48.375Z",
+      "started": "2026-10-01T18:59:01.570Z",
       "passed": true,
       "checks": [
         {
           "label": "exactly one review task",
           "ok": true
+        },
+        {
+          "label": "certification read as not yet certified",
+          "ok": true,
+          "detail": "says_not_certified"
+        },
+        {
+          "label": "complete inquiry routed as ready for review",
+          "ok": true,
+          "detail": "ready_for_review"
         },
         {
           "label": "task associated to the contact",
@@ -41,111 +51,10 @@
         {
           "label": "no email sent (no email or communication endpoint called)",
           "ok": true
-        }
-      ]
-    },
-    {
-      "id": "established",
-      "started": "2026-10-01T18:18:56.013Z",
-      "passed": true,
-      "checks": [
+        },
         {
-          "label": "exactly one review task",
+          "label": "proposed reply does not ask for phone, email or name",
           "ok": true
-        },
-        {
-          "label": "intent read as an established QME",
-          "ok": true,
-          "detail": "established_qme_joining"
-        }
-      ]
-    },
-    {
-      "id": "sparse",
-      "started": "2026-10-01T18:19:03.618Z",
-      "passed": true,
-      "checks": [
-        {
-          "label": "no model call for a one-word message",
-          "ok": true
-        },
-        {
-          "label": "review status: needs information",
-          "ok": true
-        },
-        {
-          "label": "everything else left as not stated",
-          "ok": true
-        },
-        {
-          "label": "still one review task, with a reply asking for the basics",
-          "ok": true
-        }
-      ]
-    },
-    {
-      "id": "outOfState",
-      "started": "2026-10-01T18:19:08.437Z",
-      "passed": true,
-      "checks": [
-        {
-          "label": "not rejected: a review task exists",
-          "ok": true
-        },
-        {
-          "label": "routed to clarification",
-          "ok": true,
-          "detail": "needs_clarification"
-        },
-        {
-          "label": "flagged: licensed states without California",
-          "ok": true,
-          "detail": "clarify:licensed_states_without_california"
-        }
-      ]
-    },
-    {
-      "id": "conflict",
-      "started": "2026-10-01T18:19:16.678Z",
-      "passed": true,
-      "checks": [
-        {
-          "label": "verified QME status unchanged",
-          "ok": true
-        },
-        {
-          "label": "contact owner unchanged",
-          "ok": true
-        },
-        {
-          "label": "lifecycle stage unchanged",
-          "ok": true
-        },
-        {
-          "label": "conflict flagged for review",
-          "ok": true,
-          "detail": "conflict_with_verified_record"
-        },
-        {
-          "label": "task raised to high priority",
-          "ok": true
-        }
-      ]
-    },
-    {
-      "id": "unclear",
-      "started": "2026-10-01T18:19:24.844Z",
-      "passed": true,
-      "checks": [
-        {
-          "label": "routed to clarification",
-          "ok": true,
-          "detail": "needs_clarification"
-        },
-        {
-          "label": "no certification status invented",
-          "ok": true,
-          "detail": "not_stated"
         }
       ]
     }
